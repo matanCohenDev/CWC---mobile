@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "933031527234",
+    "project_id": "cwc---content-with-coffee",
+    "storage_bucket": "cwc---content-with-coffee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933031527234:android:1758619ebe0c2189937edb",
+        "android_client_info": {
+          "package_name": "com.example.cwc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVQ_9-TZ8La_1C3urnhKqUbX-OH7Ne6pE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
