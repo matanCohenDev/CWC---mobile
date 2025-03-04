@@ -3,6 +3,7 @@ package com.example.cwc
 import android.content.ContentResolver
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.*
 import android.widget.Button
@@ -36,11 +37,14 @@ class UploadFragment : Fragment() {
 
   private fun saveImageLocally(uri: Uri): String? {
     try {
-      val contentResolver: ContentResolver = requireContext().contentResolver
-      val inputStream: InputStream? = contentResolver.openInputStream(uri)
-
+      val inputStream = requireContext().contentResolver.openInputStream(uri)
       if (inputStream != null) {
-        val file = File(requireContext().filesDir, "post_${System.currentTimeMillis()}.jpg")
+        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val appDir = File(picturesDir, "CWCImages")
+        if (!appDir.exists()) {
+          appDir.mkdirs()
+        }
+        val file = File(appDir, "post_${System.currentTimeMillis()}.jpg")
         val outputStream = FileOutputStream(file)
         inputStream.copyTo(outputStream)
         inputStream.close()

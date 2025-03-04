@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
@@ -206,21 +207,25 @@ class EditProfileActivity : AppCompatActivity() {
 
   private fun saveImageLocally(uri: Uri): String? {
     return try {
-      val contentResolver: InputStream? = contentResolver.openInputStream(uri)
-      if (contentResolver != null) {
-        val file = File(filesDir, "profile_${System.currentTimeMillis()}.jpg")
+      val inputStream = contentResolver.openInputStream(uri)
+      inputStream?.let {
+        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val appDir = File(picturesDir, "CWCImages")
+        if (!appDir.exists()) {
+          appDir.mkdirs()
+        }
+        val file = File(appDir, "profile_${System.currentTimeMillis()}.jpg")
         val outputStream = FileOutputStream(file)
-        contentResolver.copyTo(outputStream)
-        contentResolver.close()
+        it.copyTo(outputStream)
+        it.close()
         outputStream.close()
         file.absolutePath
-      } else null
+      }
     } catch (e: Exception) {
       Log.e("EditProfileActivity", "Failed to save image locally: ${e.message}")
       null
     }
   }
-
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
     return when(item.itemId) {
       android.R.id.home -> {

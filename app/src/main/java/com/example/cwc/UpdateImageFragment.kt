@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -16,6 +17,7 @@ import com.example.cwc.R
 import com.example.cwc.data.models.Post
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.File
+import java.io.FileOutputStream
 
 class UpdateImageActivity : AppCompatActivity() {
 
@@ -94,8 +96,13 @@ class UpdateImageActivity : AppCompatActivity() {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
       inputStream?.let {
-        val file = File(filesDir, "post_${System.currentTimeMillis()}.jpg")
-        val outputStream = file.outputStream()
+        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val appDir = File(picturesDir, "CWCImages")
+        if (!appDir.exists()) {
+          appDir.mkdirs()
+        }
+        val file = File(appDir, "post_${System.currentTimeMillis()}.jpg")
+        val outputStream = FileOutputStream(file)
         it.copyTo(outputStream)
         it.close()
         outputStream.close()
@@ -106,6 +113,7 @@ class UpdateImageActivity : AppCompatActivity() {
       null
     }
   }
+
 
   private fun updatePost(postId: String, newDescription: String, newImagePath: String?) {
     val updates = mutableMapOf<String, Any>(

@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$/CWC-content with coffee" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/CinemaTalk" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/Food-Guard" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/GymnastLink" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/PawfectMatch" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/plants-universe-mobile" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
 </project>
