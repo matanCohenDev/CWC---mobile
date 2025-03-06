@@ -1,7 +1,6 @@
 package com.example.cwc
 
 import android.app.Activity
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -16,6 +15,14 @@ import com.bumptech.glide.Glide
 import com.example.cwc.R
 import com.example.cwc.data.models.Post
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.cwc.cloudinary.CloudinaryService
+import com.example.cwc.cloudinary.CloudinaryUploadResponse
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 
@@ -47,23 +54,24 @@ class UpdateImageActivity : AppCompatActivity() {
     btnSave = findViewById(R.id.btnSave)
     btnCancel = findViewById(R.id.btnCancel)
 
-    // קבלת נתוני הפוסט מהאינטנט
+    // Get post data from the Intent
     post = intent.getSerializableExtra("post") as? Post ?: run {
       Toast.makeText(this, "No post data found", Toast.LENGTH_SHORT).show()
       finish()
       return
     }
 
-    // טעינת תמונת הפוסט הנוכחית מהקובץ המקומי
+    // Load the current post image.
+    // If post.image_path is already a URL from Cloudinary, Glide will load it correctly.
     Glide.with(this)
-      .load(File(post.image_path))
+      .load(post.image_path)
       .into(ivPostImage)
 
-    // הצגת התיאור הקיים
+    // Display the current description
     etDescription.setText(post.description)
 
     btnChooseImage.setOnClickListener {
-      // פתיחת הגלריה לבחירת תמונה חדשה
+      // Open gallery to choose a new image
       pickImageLauncher.launch("image/*")
     }
 
@@ -74,15 +82,14 @@ class UpdateImageActivity : AppCompatActivity() {
         return@setOnClickListener
       }
       if (selectedImageUri != null) {
-        // אם נבחרה תמונה חדשה – שמירה לוקאלית ועדכון הנתיב במסד הנתונים
-        val newImagePath = saveImageLocally(selectedImageUri!!)
-        if (newImagePath != null) {
-          updatePost(post.id, updatedDescription, newImagePath)
-        } else {
-          Toast.makeText(this, "Failed to save new image", Toast.LENGTH_SHORT).show()
-        }
+        // If a new image is selected, upload it to Cloudinary.
+        uploadImageToCloudinary(selectedImageUri!!, onSuccess = { secureUrl ->
+          updatePost(post.id, updatedDescription, secureUrl)
+        }, onFailure = { errorMsg ->
+          Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
+        })
       } else {
-        // עדכון רק התיאור
+        // Update only the description
         updatePost(post.id, updatedDescription, null)
       }
     }
@@ -92,6 +99,7 @@ class UpdateImageActivity : AppCompatActivity() {
     }
   }
 
+  // Saves the selected image locally (temporary) to get a File reference.
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
@@ -114,7 +122,7 @@ class UpdateImageActivity : AppCompatActivity() {
     }
   }
 
-
+  // Updates the post in Firestore with the new description and (optionally) new image URL.
   private fun updatePost(postId: String, newDescription: String, newImagePath: String?) {
     val updates = mutableMapOf<String, Any>(
       "description" to newDescription
@@ -133,5 +141,44 @@ class UpdateImageActivity : AppCompatActivity() {
       .addOnFailureListener { e ->
         Toast.makeText(this, "Failed to update post: ${e.message}", Toast.LENGTH_SHORT).show()
       }
+  }
+
+  // Uploads the selected image to Cloudinary using Retrofit.
+  private fun uploadImageToCloudinary(
+    imageUri: Uri,
+    onSuccess: (String) -> Unit,
+    onFailure: (String) -> Unit
+  ) {
+    val localImagePath = saveImageLocally(imageUri)
+    if (localImagePath == null) {
+      onFailure("Failed to save image locally")
+      return
+    }
+    val file = File(localImagePath)
+    val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
+    val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+    // Use your Cloudinary preset and cloud name.
+    // Replace "CWC - Content With Coffee" and "dtdw1bmq4" with your actual preset and cloud name.
+    val preset = "CWC - Content With Coffee"
+    val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
+    val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)
+    call.enqueue(object : Callback<CloudinaryUploadResponse> {
+      override fun onResponse(call: Call<CloudinaryUploadResponse>, response: Response<CloudinaryUploadResponse>) {
+        if (response.isSuccessful) {
+          val uploadResponse = response.body()
+          if (uploadResponse?.secure_url != null) {
+            onSuccess(uploadResponse.secure_url)
+          } else {
+            onFailure("Upload succeeded but no URL returned")
+          }
+        } else {
+          onFailure("Upload failed: ${response.message()}")
+        }
+      }
+      override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
+        onFailure("Upload failed: ${t.message}")
+      }
+    })
   }
 }

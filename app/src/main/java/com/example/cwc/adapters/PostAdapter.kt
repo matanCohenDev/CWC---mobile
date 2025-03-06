@@ -55,7 +55,7 @@ class PostAdapter(
 
     // טעינת תמונת הפוסט מהנתיב המקומי באמצעות Glide
     Glide.with(holder.itemView.context)
-      .load(File(post.image_path))
+      .load(post.image_path)
       .into(holder.postImage)
 
     // הצגת תיאור הפוסט

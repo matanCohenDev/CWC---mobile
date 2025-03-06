@@ -42,8 +42,9 @@ class EditPostActivity : AppCompatActivity() {
 
     // טעינת תמונת הפוסט מהקובץ המקומי
     Glide.with(this)
-      .load(File(post.image_path))
+      .load(post.image_path)
       .into(ivPostImage)
+
 
     // הצגת תיאור הפוסט הקיים
     etDescription.setText(post.description)

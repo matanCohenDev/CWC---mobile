@@ -52,7 +52,7 @@ class ProfilePostAdapter(private val postList: MutableList<Post>, private val co
 
     // טעינת תמונת הפוסט מהנתיב המקומי (הנתיב נשמר בשדה image_path)
     Glide.with(holder.itemView.context)
-      .load(File(post.image_path))
+      .load(post.image_path)
       .into(holder.postImage)
 
     // הצגת תיאור הפוסט

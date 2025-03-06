@@ -1,6 +1,5 @@
 package com.example.cwc
 
-import android.content.ContentResolver
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -12,12 +11,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.example.cwc.cloudinary.CloudinaryService
+import com.example.cwc.cloudinary.CloudinaryUploadResponse
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 
 class UploadFragment : Fragment() {
   private var selectedImageUri: Uri? = null
@@ -35,10 +41,11 @@ class UploadFragment : Fragment() {
     pickImageLauncher.launch("image/*")
   }
 
+  // Temporarily saves the image locally to obtain a File reference for upload.
   private fun saveImageLocally(uri: Uri): String? {
-    try {
+    return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
-      if (inputStream != null) {
+      inputStream?.let {
         val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         val appDir = File(picturesDir, "CWCImages")
         if (!appDir.exists()) {
@@ -46,35 +53,77 @@ class UploadFragment : Fragment() {
         }
         val file = File(appDir, "post_${System.currentTimeMillis()}.jpg")
         val outputStream = FileOutputStream(file)
-        inputStream.copyTo(outputStream)
-        inputStream.close()
+        it.copyTo(outputStream)
+        it.close()
         outputStream.close()
-        return file.absolutePath
+        file.absolutePath
       }
     } catch (e: Exception) {
       Log.e("UploadFragment", "Failed to save image locally: ${e.message}")
+      null
     }
-    return null
   }
 
+  // Uploads the image to Cloudinary and on success calls onSuccess with the secure URL.
+  private fun uploadImageToCloudinary(
+    imageUri: Uri,
+    onSuccess: (String) -> Unit,
+    onFailure: (String) -> Unit
+  ) {
+    val localImagePath = saveImageLocally(imageUri)
+    if (localImagePath == null) {
+      onFailure("Failed to save image locally")
+      return
+    }
+    val file = File(localImagePath)
+    val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
+    val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+    // Set your Cloudinary preset and cloud name.
+    val preset = "CWC - Content With Coffee"
+    val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
+
+    val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)
+    call.enqueue(object : Callback<CloudinaryUploadResponse> {
+      override fun onResponse(call: Call<CloudinaryUploadResponse>, response: Response<CloudinaryUploadResponse>) {
+        if (response.isSuccessful) {
+          val uploadResponse = response.body()
+          if (uploadResponse?.secure_url != null) {
+            onSuccess(uploadResponse.secure_url)
+          } else {
+            onFailure("Upload succeeded but no URL returned")
+          }
+        } else {
+          onFailure("Upload failed: ${response.message()}")
+        }
+      }
+
+      override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
+        onFailure("Upload failed: ${t.message}")
+      }
+    })
+  }
+
+  // Uploads the post by uploading the image to Cloudinary and then saving the post to Firestore.
   private fun uploadPost(imageUri: Uri, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
-    val localImagePath = saveImageLocally(imageUri)
-    if (localImagePath == null) {
-      Toast.makeText(requireContext(), "Failed to save image locally", Toast.LENGTH_SHORT).show()
-      return
-    }
-
-    savePostToFirestore(localImagePath, description)
+    // Upload the image to Cloudinary
+    uploadImageToCloudinary(imageUri, onSuccess = { secureUrl ->
+      // Once the image is uploaded, save the post with the Cloudinary URL.
+      savePostToFirestore(secureUrl, description)
+    }, onFailure = { errorMsg ->
+      Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+    })
   }
 
-  private fun savePostToFirestore(imagePath: String, description: String) {
+  // Saves the post data to Firestore with the image URL from Cloudinary.
+  private fun savePostToFirestore(imageUrl: String, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
     val post = hashMapOf(
       "user_id" to userId,
-      "image_path" to imagePath,
+      "image_path" to imageUrl,  // Now stores the Cloudinary URL
       "description" to description,
       "timestamp" to System.currentTimeMillis(),
       "likes" to 0,
@@ -129,10 +178,5 @@ class UploadFragment : Fragment() {
       }
       else -> super.onOptionsItemSelected(item)
     }
-  }
-
-  override fun onDestroyView() {
-    super.onDestroyView()
-    (activity as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
   }
 }

@@ -32,7 +32,7 @@ class UserPostsAdapter(
     val post = postList[position]
     // טעינת תמונת הפוסט
     Glide.with(context)
-      .load(File(post.image_path))
+      .load(post.image_path)
       .into(holder.postImage)
     // הצגת תיאור הפוסט
     holder.postDescription.text = post.description

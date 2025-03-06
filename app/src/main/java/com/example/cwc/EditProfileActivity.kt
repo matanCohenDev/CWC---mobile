@@ -15,8 +15,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import com.squareup.picasso.Picasso
+import com.example.cwc.cloudinary.CloudinaryService
+import com.example.cwc.cloudinary.CloudinaryUploadResponse
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -38,7 +45,7 @@ class EditProfileActivity : AppCompatActivity() {
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       selectedImageUri = it
-      profileImageView.setImageURI(it) // תצוגה מקדימה של התמונה שנבחרה
+      profileImageView.setImageURI(it) // Preview the selected image
     }
   }
 
@@ -59,12 +66,12 @@ class EditProfileActivity : AppCompatActivity() {
 
     loadCurrentProfile()
 
-    // לחיצה על תמונת הפרופיל לפתיחת הגלריה
+    // Open gallery when profile image is clicked
     profileImageView.setOnClickListener {
       pickImageLauncher.launch("image/*")
     }
 
-    // לחיצה על כפתור שמירה – מעדכן את הפרופיל
+    // Save profile when button is clicked
     btnSave.setOnClickListener {
       saveProfile()
     }
@@ -82,18 +89,18 @@ class EditProfileActivity : AppCompatActivity() {
           val country = document.getString("country") ?: ""
           etLocation.setText(if (city.isNotEmpty() && country.isNotEmpty()) "$city, $country" else country)
 
-          // בדיקה והצגת תמונת פרופיל קיימת אם יש נתיב במסד הנתונים
+          // Check for existing profile image
           val profileImageUrl = document.getString("profileImageUrl")
           if (!profileImageUrl.isNullOrEmpty()) {
             if (profileImageUrl.startsWith("http://") || profileImageUrl.startsWith("https://")) {
-              // אם זה URL מהאינטרנט – משתמשים ב-Picasso
+              // If it's a URL, load it with Picasso
               Picasso.get()
                 .load(profileImageUrl)
                 .placeholder(R.drawable.profile_foreground)
                 .error(R.drawable.profile_foreground)
                 .into(profileImageView)
             } else {
-              // אם זה נתיב מקומי – טוענים את התמונה דרך BitmapFactory
+              // Otherwise, load from local file
               val bitmap = BitmapFactory.decodeFile(profileImageUrl)
               if (bitmap != null) {
                 profileImageView.setImageBitmap(bitmap)
@@ -102,7 +109,6 @@ class EditProfileActivity : AppCompatActivity() {
               }
             }
           } else {
-            // במידה ואין נתיב, מציגים תמונת ברירת מחדל
             profileImageView.setImageResource(R.drawable.profile_foreground)
           }
         }
@@ -111,7 +117,6 @@ class EditProfileActivity : AppCompatActivity() {
         Toast.makeText(this, "Failed to load profile: ${e.message}", Toast.LENGTH_SHORT).show()
       }
   }
-
 
   private fun saveProfile() {
     val userId = auth.currentUser?.uid ?: return
@@ -133,7 +138,7 @@ class EditProfileActivity : AppCompatActivity() {
       updatedCountry = ""
     }
 
-    // הכנת השדות לעדכון
+    // Prepare the fields for updating
     val updates = hashMapOf(
       "firstname" to updatedFirstName,
       "lastname" to updatedLastName,
@@ -142,20 +147,18 @@ class EditProfileActivity : AppCompatActivity() {
       "country" to updatedCountry
     )
 
-    // אם נבחרה תמונה, נשמור אותה לוקאלית ונוסיף את הנתיב לעדכון במסמך המשתמש
+    // If an image is selected, upload it to Cloudinary
     if (selectedImageUri != null) {
-      val localImagePath = saveImageLocally(selectedImageUri!!)
-      if (localImagePath != null) {
-        updates["profileImageUrl"] = localImagePath
-      } else {
-        Toast.makeText(this, "Failed to save image locally", Toast.LENGTH_SHORT).show()
-        return
-      }
+      uploadImageToCloudinary(selectedImageUri!!, onSuccess = { secureUrl ->
+        updates["profileImageUrl"] = secureUrl
+        updateProfileInFirestore(userId, updates)
+      }, onFailure = { errorMsg ->
+        Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
+      })
+    } else {
+      updateProfileInFirestore(userId, updates)
     }
-
-    updateProfileInFirestore(userId, updates)
   }
-
 
   private fun updateProfileInFirestore(userId: String, updates: Map<String, Any>) {
     db.collection("users").document(userId)
@@ -169,42 +172,56 @@ class EditProfileActivity : AppCompatActivity() {
       }
   }
 
-  private fun uploadProfilePicture(imageUri: Uri, onComplete: () -> Unit) {
+  /**
+   * Uploads the selected image to Cloudinary.
+   * Uses the local copy of the image (via saveImageLocally) to create a File,
+   * then sends it to Cloudinary using Retrofit.
+   */
+  private fun uploadImageToCloudinary(
+    imageUri: Uri,
+    onSuccess: (String) -> Unit,
+    onFailure: (String) -> Unit
+  ) {
+    // Save image locally temporarily to get a File reference
     val localImagePath = saveImageLocally(imageUri)
     if (localImagePath == null) {
-      Toast.makeText(this, "Failed to save image locally", Toast.LENGTH_SHORT).show()
+      onFailure("Failed to save image locally")
       return
     }
-    // יצירת URI מהקובץ ששמור לוקאלית
-    val localFileUri = Uri.fromFile(File(localImagePath))
-    val storageRef = FirebaseStorage.getInstance().reference
-    val userId = auth.currentUser?.uid ?: return
-    val profileImageRef = storageRef.child("profile_pictures/$userId.jpg")
-    profileImageRef.putFile(localFileUri)
-      .addOnSuccessListener {
-        profileImageRef.downloadUrl.addOnSuccessListener { downloadUri ->
-          saveImageUrlToFirestore(downloadUri.toString(), onComplete)
+    val file = File(localImagePath)
+    val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
+    val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
+
+    // Prepare the upload preset. Replace "your_upload_preset" with your actual preset.
+    val preset = "CWC - Content With Coffee"
+    val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
+
+    // Replace "your_cloud_name" with your actual Cloudinary cloud name.
+    val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)
+    call.enqueue(object : Callback<CloudinaryUploadResponse> {
+      override fun onResponse(
+        call: Call<CloudinaryUploadResponse>,
+        response: Response<CloudinaryUploadResponse>
+      ) {
+        if (response.isSuccessful) {
+          val uploadResponse = response.body()
+          if (uploadResponse?.secure_url != null) {
+            onSuccess(uploadResponse.secure_url)
+          } else {
+            onFailure("Upload succeeded but no URL returned")
+          }
+        } else {
+          onFailure("Upload failed: ${response.message()}")
         }
       }
-      .addOnFailureListener {
-        Toast.makeText(this, "Image upload failed: ${it.message}", Toast.LENGTH_SHORT).show()
+
+      override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
+        onFailure("Upload failed: ${t.message}")
       }
+    })
   }
 
-
-  private fun saveImageUrlToFirestore(imageUrl: String, onComplete: () -> Unit) {
-    val userId = auth.currentUser?.uid ?: return
-    db.collection("users").document(userId)
-      .update("profileImageUrl", imageUrl)
-      .addOnSuccessListener {
-        Toast.makeText(this, "Profile picture updated!", Toast.LENGTH_SHORT).show()
-        onComplete()
-      }
-      .addOnFailureListener {
-        Toast.makeText(this, "Failed to update profile picture: ${it.message}", Toast.LENGTH_SHORT).show()
-      }
-  }
-
+  // This method remains unchanged – it saves the image locally temporarily.
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
@@ -226,6 +243,7 @@ class EditProfileActivity : AppCompatActivity() {
       null
     }
   }
+
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
     return when(item.itemId) {
       android.R.id.home -> {
