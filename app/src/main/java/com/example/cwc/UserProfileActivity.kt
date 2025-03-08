@@ -16,6 +16,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import de.hdodenhof.circleimageview.CircleImageView
 import android.widget.TextView
+import com.google.firebase.firestore.Query
+
 
 class UserProfileActivity : AppCompatActivity() {
 
@@ -142,7 +144,7 @@ class UserProfileActivity : AppCompatActivity() {
   private fun loadUserPosts(userId: String) {
     FirebaseFirestore.getInstance().collection("posts")
       .whereEqualTo("user_id", userId)
-      .orderBy("timestamp")
+      .orderBy("timestamp", Query.Direction.DESCENDING)
       .get()
       .addOnSuccessListener { documents ->
         val posts = mutableListOf<Post>()

@@ -8,7 +8,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
-import com.example.cwc.data.local.User
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class BottomNavFragment : Fragment() {
@@ -17,43 +16,41 @@ class BottomNavFragment : Fragment() {
     inflater: LayoutInflater, container: ViewGroup?,
     savedInstanceState: Bundle?
   ): View? {
-    // Inflate the layout for this fragment
+    // Inflate the layout that contains your BottomNavigationView
     val view = inflater.inflate(R.layout.fragment_bottom_nav, container, false)
     val navigationBar = view.findViewById<BottomNavigationView>(R.id.bottom_navigation)
     val currentPage = arguments?.getString("current_page")
 
-    if (currentPage == "home") {
-      navigationBar.selectedItemId = R.id.home;
+    // Set the selected item based on the current page
+    when (currentPage) {
+      "home" -> navigationBar.selectedItemId = R.id.home
+      "profile" -> navigationBar.selectedItemId = R.id.profile
+      "upload" -> navigationBar.selectedItemId = R.id.upload
     }
-    else if (currentPage == "profile") {
-      navigationBar.selectedItemId = R.id.profile;
-    }
-    else if (currentPage == "upload") {
-      navigationBar.selectedItemId = R.id.upload;
-    }
-
 
     navigationBar.setOnItemSelectedListener { item: MenuItem ->
-      when(item.itemId) {
+      when (item.itemId) {
         R.id.home -> {
           Log.d("BottomNavFragment", "Home button clicked")
           handleMove(currentPage, "home")
           true
         }
         R.id.profile -> {
-          // Respond to navigation item 2 click
           Log.d("BottomNavFragment", "Profile button clicked")
           handleMove(currentPage, "profile")
           true
         }
         R.id.upload -> {
-          // Respond to navigation item 2 click
           Log.d("BottomNavFragment", "Upload button clicked")
           handleMove(currentPage, "upload")
           true
         }
+        R.id.map -> {
+          Log.d("BottomNavFragment", "Map button clicked")
+          handleMove(currentPage, "map")
+          true
+        }
         R.id.logout -> {
-          // Respond to navigation item 2 click
           Log.d("BottomNavFragment", "Logout button clicked")
           handleMove(currentPage, "logout")
           true
@@ -65,28 +62,29 @@ class BottomNavFragment : Fragment() {
   }
 
   fun handleMove(currentPage: String?, newPage: String) {
-    val action = when (currentPage) {
+    when (currentPage) {
       "home" -> when (newPage) {
         "profile" -> findNavController().navigate(R.id.action_homeFragment_to_profileFragment)
-        "upload" -> findNavController().navigate(R.id.action_homeFragment_to_uploadFragment)
-        "logout" -> findNavController().navigate(R.id.action_homeFragment_to_logoutFragment)
-        else -> null
+        "upload"  -> findNavController().navigate(R.id.action_homeFragment_to_uploadFragment)
+        "map"     -> findNavController().navigate(R.id.action_homeFragment_to_cafeMapFragment)
+        "logout"  -> findNavController().navigate(R.id.action_homeFragment_to_logoutFragment)
       }
       "profile" -> when (newPage) {
-        "home" -> findNavController().navigate(R.id.action_profileFragment_to_homeFragment)
-        "upload" -> findNavController().navigate(R.id.action_profileFragment_to_uploadFragment)
-        "logout" -> findNavController().navigate(R.id.action_profileFragment_to_logoutFragment)
-        else -> null
+        "home"    -> findNavController().navigate(R.id.action_profileFragment_to_homeFragment)
+        "upload"  -> findNavController().navigate(R.id.action_profileFragment_to_uploadFragment)
+        "map"     -> findNavController().navigate(R.id.action_profileFragment_to_cafeMapFragment)
+        "logout"  -> findNavController().navigate(R.id.action_profileFragment_to_logoutFragment)
       }
       "upload" -> when (newPage) {
-        "home" -> findNavController().navigate(R.id.action_uploadFragment_to_homeFragment)
+        "home"    -> findNavController().navigate(R.id.action_uploadFragment_to_homeFragment)
         "profile" -> findNavController().navigate(R.id.action_uploadFragment_to_profileFragment)
-        "logout" -> findNavController().navigate(R.id.action_uploadFragment_to_logoutFragment)
-        else -> null
+        "map"     -> findNavController().navigate(R.id.action_uploadFragment_to_cafeMapFragment)
+        "logout"  -> findNavController().navigate(R.id.action_uploadFragment_to_logoutFragment)
       }
-      else -> null
+      else -> {
+        // Optional: Use a global action if the current page isn't known
+        findNavController().navigate(R.id.action_global_cafeMapFragment)
+      }
     }
   }
-
-
 }
