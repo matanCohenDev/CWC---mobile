@@ -1,7 +1,6 @@
 package com.example.cwc.viewmodel
 
 import android.graphics.BitmapFactory
-import android.util.Log
 import android.widget.ImageView
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cwc.data.local.User
 import com.example.cwc.data.repository.UserRepository
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.launch
 
 class UserViewModel(private val repository: UserRepository) : ViewModel() {
@@ -22,14 +22,12 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
   private val _logoutStatus = MutableLiveData<Boolean>()
   val logoutStatus: LiveData<Boolean> get() = _logoutStatus
 
-  // הוספת משתמש
   fun addUser(user: User) {
     viewModelScope.launch {
       repository.insertUser(user)
     }
   }
 
-  // קבלת כל המשתמשים
   fun getUsers() {
     viewModelScope.launch {
       val userList = repository.getAllUsers()
@@ -37,7 +35,6 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
   }
 
-  // קבלת משתמש לפי ID עם LiveData
   fun getUser(id: String) {
     viewModelScope.launch {
       val retrievedUser = repository.getUser(id)
@@ -45,14 +42,12 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
   }
 
-  // מחיקת משתמש
   fun deleteUser(user: User) {
     viewModelScope.launch {
       repository.deleteUser(user)
     }
   }
 
-  // יציאה מהמערכת (logout)
   fun logout() {
     viewModelScope.launch {
       repository.logout()
@@ -60,14 +55,19 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
   }
 
-  // טעינת תמונת פרופיל
+  // If imageBlob is null, load the image from profileImageUrl via Picasso
   fun loadProfilePicture(userId: String, profileImage: ImageView) {
     user.observeForever { user ->
       user?.let {
-        val imageBlob = it.imageBlob
-        if (imageBlob != null) {
-          val bitmap = BitmapFactory.decodeByteArray(imageBlob, 0, imageBlob.size)
+        if (it.imageBlob != null) {
+          val bitmap = BitmapFactory.decodeByteArray(it.imageBlob, 0, it.imageBlob.size)
           profileImage.setImageBitmap(bitmap)
+        } else if (!it.profileImageUrl.isNullOrEmpty()) {
+          Picasso.get()
+            .load(it.profileImageUrl)
+            .placeholder(com.example.cwc.R.drawable.profile_foreground)
+            .error(com.example.cwc.R.drawable.profile_foreground)
+            .into(profileImage)
         }
       }
     }

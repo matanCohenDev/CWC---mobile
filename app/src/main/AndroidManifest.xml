@@ -27,6 +27,9 @@
     <activity android:name=".EditProfileActivity" />
     <activity android:name=".UpdateImageActivity" />
     <activity android:name=".UserProfileActivity" />
+    <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="@string/google_maps_key" />
 
   </application>
 

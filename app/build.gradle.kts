@@ -74,10 +74,10 @@ dependencies {
   implementation(libs.retrofit)
   implementation(libs.retrofit.gson)
   implementation(libs.okhttp.logging.interceptor)
+  implementation("com.squareup.okhttp3:okhttp:4.9.0") // Added OkHttp core dependency
   implementation(libs.gson)
 
   implementation(libs.glide)
 
   implementation(libs.circleimageview)
 }
-

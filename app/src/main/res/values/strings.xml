@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CWC</string>
+    <string name="google_maps_key">AIzaSyBllgA_CFlDXFQbumZVYglBnLvvvS1h2Zs</string>
+
 </resources>
