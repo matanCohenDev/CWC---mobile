@@ -1,5 +1,6 @@
 package com.example.cwc
 
+import android.content.Intent
 import android.content.ContentResolver
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -26,7 +27,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
+import java.security.MessageDigest
 
 class EditProfileActivity : AppCompatActivity() {
 
@@ -36,16 +37,22 @@ class EditProfileActivity : AppCompatActivity() {
   private lateinit var etEmail: EditText
   private lateinit var etLocation: EditText
   private lateinit var btnSave: Button
+  private lateinit var btnCancel: Button
 
   private val auth = FirebaseAuth.getInstance()
   private val db = FirebaseFirestore.getInstance()
 
+  // Hold the selected image URI (if any)
   private var selectedImageUri: Uri? = null
+  // Store the old profile image URL so we can delete it later if needed
+  private var oldProfileImageUrl: String? = null
 
+  // Use ActivityResult to pick an image
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       selectedImageUri = it
-      profileImageView.setImageURI(it) // Preview the selected image
+      // Immediately update the preview with the new image (local URI)
+      profileImageView.setImageURI(it)
     }
   }
 
@@ -63,17 +70,23 @@ class EditProfileActivity : AppCompatActivity() {
     etEmail = findViewById(R.id.edit_et_email)
     etLocation = findViewById(R.id.edit_et_location)
     btnSave = findViewById(R.id.edit_btn_save)
+    btnCancel = findViewById(R.id.edit_btn_cancel)
 
+    // Load the current profile once on creation
     loadCurrentProfile()
 
-    // Open gallery when profile image is clicked
     profileImageView.setOnClickListener {
       pickImageLauncher.launch("image/*")
     }
 
-    // Save profile when button is clicked
     btnSave.setOnClickListener {
       saveProfile()
+    }
+
+    // Cancel button: simply finish the activity without saving changes.
+    btnCancel.setOnClickListener {
+      setResult(RESULT_CANCELED)
+      finish()
     }
   }
 
@@ -89,18 +102,24 @@ class EditProfileActivity : AppCompatActivity() {
           val country = document.getString("country") ?: ""
           etLocation.setText(if (city.isNotEmpty() && country.isNotEmpty()) "$city, $country" else country)
 
-          // Check for existing profile image
           val profileImageUrl = document.getString("profileImageUrl")
+          oldProfileImageUrl = profileImageUrl  // Save old image URL for later deletion
           if (!profileImageUrl.isNullOrEmpty()) {
             if (profileImageUrl.startsWith("http://") || profileImageUrl.startsWith("https://")) {
-              // If it's a URL, load it with Picasso
               Picasso.get()
                 .load(profileImageUrl)
                 .placeholder(R.drawable.profile_foreground)
                 .error(R.drawable.profile_foreground)
+                .networkPolicy(
+                  com.squareup.picasso.NetworkPolicy.NO_CACHE,
+                  com.squareup.picasso.NetworkPolicy.NO_STORE
+                )
+                .memoryPolicy(
+                  com.squareup.picasso.MemoryPolicy.NO_CACHE,
+                  com.squareup.picasso.MemoryPolicy.NO_STORE
+                )
                 .into(profileImageView)
             } else {
-              // Otherwise, load from local file
               val bitmap = BitmapFactory.decodeFile(profileImageUrl)
               if (bitmap != null) {
                 profileImageView.setImageBitmap(bitmap)
@@ -138,7 +157,6 @@ class EditProfileActivity : AppCompatActivity() {
       updatedCountry = ""
     }
 
-    // Prepare the fields for updating
     val updates = hashMapOf(
       "firstname" to updatedFirstName,
       "lastname" to updatedLastName,
@@ -147,42 +165,72 @@ class EditProfileActivity : AppCompatActivity() {
       "country" to updatedCountry
     )
 
-    // If an image is selected, upload it to Cloudinary
     if (selectedImageUri != null) {
+      // If a new image was selected, upload it first.
       uploadImageToCloudinary(selectedImageUri!!, onSuccess = { secureUrl ->
+        Log.d("EditProfileActivity", "New secureUrl: $secureUrl")
         updates["profileImageUrl"] = secureUrl
+        // Delete old image from Cloudinary if it exists and is different
+        if (!oldProfileImageUrl.isNullOrEmpty() && oldProfileImageUrl != secureUrl) {
+          deleteOldImage(oldProfileImageUrl!!)
+        }
+        // Update Firestore with the new image URL and other changes
         updateProfileInFirestore(userId, updates)
+        // Immediately update the UI with the new image (force no caching)
+        Picasso.get()
+          .load(secureUrl)
+          .placeholder(R.drawable.profile_foreground)
+          .error(R.drawable.profile_foreground)
+          .networkPolicy(
+            com.squareup.picasso.NetworkPolicy.NO_CACHE,
+            com.squareup.picasso.NetworkPolicy.NO_STORE
+          )
+          .memoryPolicy(
+            com.squareup.picasso.MemoryPolicy.NO_CACHE,
+            com.squareup.picasso.MemoryPolicy.NO_STORE
+          )
+          .into(profileImageView)
       }, onFailure = { errorMsg ->
         Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
       })
     } else {
+      // If no new image was selected, simply update other profile details.
       updateProfileInFirestore(userId, updates)
     }
   }
 
   private fun updateProfileInFirestore(userId: String, updates: Map<String, Any>) {
+    Log.d("EditProfileActivity", "Updating Firestore with: $updates")
     db.collection("users").document(userId)
       .update(updates)
       .addOnSuccessListener {
+        Log.d("EditProfileActivity", "Firestore update successful")
         Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show()
+        if (updates.containsKey("profileImageUrl")) {
+          val newImageUrl = updates["profileImageUrl"] as String
+          Log.d("EditProfileActivity", "New profileImageUrl: $newImageUrl")
+          val resultIntent = Intent()
+          resultIntent.putExtra("profileImageUrl", newImageUrl)
+          setResult(RESULT_OK, resultIntent)
+        } else {
+          setResult(RESULT_OK)
+        }
         finish()
       }
       .addOnFailureListener { e ->
+        Log.e("EditProfileActivity", "Firestore update failed: ${e.message}")
         Toast.makeText(this, "Failed to update profile: ${e.message}", Toast.LENGTH_SHORT).show()
       }
   }
 
   /**
    * Uploads the selected image to Cloudinary.
-   * Uses the local copy of the image (via saveImageLocally) to create a File,
-   * then sends it to Cloudinary using Retrofit.
    */
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
     onFailure: (String) -> Unit
   ) {
-    // Save image locally temporarily to get a File reference
     val localImagePath = saveImageLocally(imageUri)
     if (localImagePath == null) {
       onFailure("Failed to save image locally")
@@ -192,11 +240,9 @@ class EditProfileActivity : AppCompatActivity() {
     val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
     val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
-    // Prepare the upload preset. Replace "your_upload_preset" with your actual preset.
     val preset = "CWC - Content With Coffee"
     val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
 
-    // Replace "your_cloud_name" with your actual Cloudinary cloud name.
     val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)
     call.enqueue(object : Callback<CloudinaryUploadResponse> {
       override fun onResponse(
@@ -214,14 +260,13 @@ class EditProfileActivity : AppCompatActivity() {
           onFailure("Upload failed: ${response.message()}")
         }
       }
-
       override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
         onFailure("Upload failed: ${t.message}")
       }
     })
   }
 
-  // This method remains unchanged – it saves the image locally temporarily.
+  // Saves the image locally temporarily.
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
@@ -244,8 +289,77 @@ class EditProfileActivity : AppCompatActivity() {
     }
   }
 
+  /**
+   * Deletes the old image from Cloudinary.
+   * Note: This requires your Cloudinary API secret to generate the signature.
+   * For production, it is recommended to perform such sensitive operations on your backend.
+   */
+  private fun deleteOldImage(oldImageUrl: String) {
+    val publicId = getPublicId(oldImageUrl)
+    if (publicId == null) {
+      Log.e("EditProfileActivity", "Could not extract public ID from URL")
+      return
+    }
+    val timestamp = System.currentTimeMillis() / 1000  // in seconds
+    // Build the string for signature: "public_id={publicId}&timestamp={timestamp}{API_SECRET}"
+    // IMPORTANT: Do not expose your API secret in a production app.
+    val apiSecret = "UIOi_lsef1LfVRNGKmLBCC3yjt8"
+    val signatureData = "public_id=$publicId&timestamp=$timestamp"
+    val signature = sha1(signatureData + apiSecret)
+
+    // Call the Cloudinary delete endpoint. (Make sure your CloudinaryService.api.deleteImage is implemented.)
+    CloudinaryService.api.deleteImage( "dtdw1bmq4",publicId, timestamp, signature, "316232596576643")
+      .enqueue(object : Callback<CloudinaryUploadResponse> {
+        override fun onResponse(call: Call<CloudinaryUploadResponse>, response: Response<CloudinaryUploadResponse>) {
+          if (response.isSuccessful) {
+            Log.d("EditProfileActivity", "Old image deleted successfully")
+          } else {
+            Log.e("EditProfileActivity", "Failed to delete old image: ${response.message()}")
+          }
+        }
+        override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
+          Log.e("EditProfileActivity", "Error deleting old image: ${t.message}")
+        }
+      })
+  }
+
+  /**
+   * Extracts the public ID from the Cloudinary image URL.
+   * Example URL: https://res.cloudinary.com/dtdw1bmq4/image/upload/v1741431603/sqftrgrbzdrg0smqfgiu.jpg
+   * This method extracts "sqftrgrbzdrg0smqfgiu" from the URL.
+   */
+  private fun getPublicId(imageUrl: String): String? {
+    try {
+      val urlWithoutQuery = imageUrl.split("?")[0]
+      val index = urlWithoutQuery.indexOf("/upload/")
+      if (index != -1) {
+        val publicIdWithVersion = urlWithoutQuery.substring(index + "/upload/".length)
+        // Remove version (if present) and file extension:
+        val parts = publicIdWithVersion.split("/")
+        val publicIdWithExtension = if (parts[0].startsWith("v") && parts.size > 1) {
+          parts.drop(1).joinToString("/")
+        } else {
+          publicIdWithVersion
+        }
+        return publicIdWithExtension.substringBeforeLast(".")
+      }
+    } catch (e: Exception) {
+      Log.e("EditProfileActivity", "Error extracting public ID: ${e.message}")
+      return null
+    }
+    return null
+  }
+
+  /**
+   * Computes the SHA-1 hash of the given input string.
+   */
+  private fun sha1(input: String): String {
+    val bytes = MessageDigest.getInstance("SHA-1").digest(input.toByteArray())
+    return bytes.joinToString("") { "%02x".format(it) }
+  }
+
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    return when(item.itemId) {
+    return when (item.itemId) {
       android.R.id.home -> {
         finish()
         true

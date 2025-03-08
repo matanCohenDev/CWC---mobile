@@ -11,21 +11,19 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.cwc.adapters.ProfilePostAdapter
-import com.example.cwc.data.local.AppDatabase
-import com.example.cwc.data.models.Post
-import com.example.cwc.data.repository.UserRepository
-import com.example.cwc.viewmodel.UserViewModel
-import com.example.cwc.viewmodel.UserViewModelFactory
 import com.example.cwc.cloudinary.CloudinaryService
 import com.example.cwc.cloudinary.CloudinaryUploadResponse
+import com.example.cwc.data.models.Post
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.squareup.picasso.MemoryPolicy
+import com.squareup.picasso.NetworkPolicy
 import com.squareup.picasso.Picasso
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -38,13 +36,16 @@ import java.io.FileOutputStream
 
 class ProfileFragment : Fragment() {
 
-  private lateinit var profilePostAdapter: ProfilePostAdapter
   private lateinit var recyclerView: RecyclerView
   private lateinit var swipeRefreshLayout: SwipeRefreshLayout
-  private var postList = mutableListOf<Post>()
+  private lateinit var profilePostAdapter: ProfilePostAdapter
 
+  private var postList = mutableListOf<Post>()
   private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+
+  // Real-time listener registration for the user doc
+  private var userDocListener: ListenerRegistration? = null
 
   // Registration for picking an image from the gallery
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -59,20 +60,16 @@ class ProfileFragment : Fragment() {
   ): View? {
     val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
-    // Load user details and update UI
-    loadUserDetails(view)
-
-    // Setup bottom navigation fragment
+    // Set up bottom navigation fragment
     val childFragment = BottomNavFragment()
     val bundle = Bundle()
     bundle.putString("current_page", "profile")
     childFragment.arguments = bundle
+    childFragmentManager.beginTransaction()
+      .replace(R.id.navbar_container, childFragment)
+      .commit()
 
-    // Load profile picture using Picasso from the URL stored in Firestore
-    val profileImage = view.findViewById<ImageView>(R.id.profile_picture)
-    loadProfilePicture(profileImage)
-
-    // When clicking the "edit profile picture" text, navigate to EditProfileActivity
+    // Click to edit profile picture -> Launch EditProfileActivity
     view.findViewById<View>(R.id.edit_profile_picture_text).setOnClickListener {
       val intent = android.content.Intent(requireContext(), EditProfileActivity::class.java)
       startActivity(intent)
@@ -81,102 +78,110 @@ class ProfileFragment : Fragment() {
     // Initialize SwipeRefreshLayout
     swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout_profile)
     swipeRefreshLayout.setOnRefreshListener {
-      fetchPosts()
-      loadUserDetails(view)
+      fetchPosts() // Refresh the user's posts
     }
 
-    // Initialize RecyclerView to display the user's posts
+    // Initialize RecyclerView for user's posts
     recyclerView = view.findViewById(R.id.recycler_view_profile)
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
     profilePostAdapter = ProfilePostAdapter(postList, requireContext())
     recyclerView.adapter = profilePostAdapter
 
-    // Display bottom navigation fragment
-    childFragmentManager.beginTransaction()
-      .replace(R.id.navbar_container, childFragment)
-      .commit()
-
-    // Fetch the user's posts
+    // Fetch the user's posts once on creation
     fetchPosts()
 
     return view
   }
 
-  // Load user details from Firestore and update UI components
-  private fun loadUserDetails(rootView: View) {
-    val userId = auth.currentUser?.uid
-    if (userId == null) {
-      Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show()
-      return
-    }
-    db.collection("users").document(userId)
-      .get()
-      .addOnSuccessListener { document ->
-        if (document.exists()) {
-          val firstName = document.getString("firstname") ?: "undefined"
-          val lastName = document.getString("lastname") ?: "undefined"
-          val city = document.getString("city") ?: "undefined"
-          val country = document.getString("country") ?: "undefined"
-          val email = document.getString("email") ?: "undefined"
-          Log.d("ProfileFragment", "Fetched user details: firstname=$firstName, lastname=$lastName, city=$city, country=$country, email=$email")
-          rootView.findViewById<TextView>(R.id.fullname_text)?.text = "$firstName $lastName"
-          rootView.findViewById<TextView>(R.id.location_text)?.text = country
-          rootView.findViewById<TextView>(R.id.email_text)?.text = email
-        } else {
-          Toast.makeText(requireContext(), "User data not found", Toast.LENGTH_SHORT).show()
-        }
-      }
-      .addOnFailureListener { e ->
-        Toast.makeText(requireContext(), "Failed to load user details", Toast.LENGTH_SHORT).show()
-        Log.e("ProfileFragment", "Error fetching user details", e)
-      }
+  override fun onStart() {
+    super.onStart()
+    attachUserSnapshotListener()
   }
 
-  // Load profile picture using Picasso from the URL stored in Firestore
-  private fun loadProfilePicture(profileImage: ImageView) {
+  override fun onStop() {
+    super.onStop()
+    detachUserSnapshotListener()
+  }
+
+  /**
+   * Attaches a real-time listener to the current user's Firestore document.
+   * Whenever the document changes (e.g., new profileImageUrl), the UI is updated immediately.
+   */
+  private fun attachUserSnapshotListener() {
     val userId = auth.currentUser?.uid ?: return
-    FirebaseFirestore.getInstance().collection("users").document(userId)
-      .get()
-      .addOnSuccessListener { document ->
-        if (document.exists()) {
-          val profileImageUrl = document.getString("profileImageUrl")
+    userDocListener = db.collection("users").document(userId)
+      .addSnapshotListener { snapshot, error ->
+        if (error != null) {
+          Toast.makeText(requireContext(), "Error loading profile: ${error.message}", Toast.LENGTH_SHORT).show()
+          return@addSnapshotListener
+        }
+        if (snapshot != null && snapshot.exists()) {
+          val firstName = snapshot.getString("firstname") ?: "undefined"
+          val lastName = snapshot.getString("lastname") ?: "undefined"
+          val city = snapshot.getString("city") ?: "undefined"
+          val country = snapshot.getString("country") ?: "undefined"
+          val email = snapshot.getString("email") ?: "undefined"
+          val profileImageUrl = snapshot.getString("profileImageUrl")
+
+          Log.d("ProfileFragment", "Fetched user details: firstname=$firstName, lastname=$lastName, city=$city, country=$country, email=$email")
+
+          // Update text fields
+          view?.findViewById<TextView>(R.id.fullname_text)?.text = "$firstName $lastName"
+          view?.findViewById<TextView>(R.id.location_text)?.text = country
+          view?.findViewById<TextView>(R.id.email_text)?.text = email
+
+          // Update profile image (with cache-busting if URL is available)
+          val profileImage = view?.findViewById<ImageView>(R.id.profile_picture)
           if (!profileImageUrl.isNullOrEmpty()) {
             if (profileImageUrl.startsWith("http://") || profileImageUrl.startsWith("https://")) {
-              // Load image from URL with Picasso
+              // Append timestamp to bust the cache
+              val finalUrl = "$profileImageUrl?ts=${System.currentTimeMillis()}"
               Picasso.get()
-                .load(profileImageUrl)
+                .load(finalUrl)
                 .placeholder(R.drawable.profile_foreground)
                 .error(R.drawable.profile_foreground)
+                .networkPolicy(NetworkPolicy.NO_CACHE, NetworkPolicy.NO_STORE)
+                .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                 .into(profileImage)
             } else {
-              // Load image from local file path
+              // If it's a local path, decode from file
               val bitmap = BitmapFactory.decodeFile(profileImageUrl)
               if (bitmap != null) {
-                profileImage.setImageBitmap(bitmap)
+                profileImage?.setImageBitmap(bitmap)
               } else {
-                profileImage.setImageResource(R.drawable.profile_foreground)
+                profileImage?.setImageResource(R.drawable.profile_foreground)
               }
             }
+          } else {
+            // No profile image set
+            profileImage?.setImageResource(R.drawable.profile_foreground)
           }
         }
       }
-      .addOnFailureListener {
-        Log.e("ProfileFragment", "Failed to load profile image: ${it.message}")
-      }
   }
 
-  // Fetch the user's posts from Firestore
+  /**
+   * Detaches the snapshot listener when the fragment is not visible.
+   */
+  private fun detachUserSnapshotListener() {
+    userDocListener?.remove()
+    userDocListener = null
+  }
+
+  /**
+   * Fetch the user's posts from Firestore (one-time).
+   * If you want real-time posts, you can attach a snapshot listener here as well.
+   */
   private fun fetchPosts() {
     swipeRefreshLayout.isRefreshing = true
-
-    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+    val currentUserId = auth.currentUser?.uid
     if (currentUserId == null) {
       Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show()
       swipeRefreshLayout.isRefreshing = false
       return
     }
 
-    FirebaseFirestore.getInstance().collection("posts")
+    db.collection("posts")
       .whereEqualTo("user_id", currentUserId)
       .orderBy("timestamp", Query.Direction.DESCENDING)
       .get()
@@ -199,8 +204,11 @@ class ProfileFragment : Fragment() {
       }
   }
 
-  // Uploads the profile picture to Cloudinary and updates the user's Firestore document with the image URL
-  fun uploadProfilePicture(imageUri: Uri) {
+  /**
+   * Called when the user selects an image from the gallery. We upload it to Cloudinary
+   * and then update Firestore with the new URL.
+   */
+  private fun uploadProfilePicture(imageUri: Uri) {
     uploadImageToCloudinary(imageUri, onSuccess = { secureUrl ->
       saveImageUrlToFirestore(secureUrl)
       Toast.makeText(requireContext(), "Profile Picture Uploaded!", Toast.LENGTH_SHORT).show()
@@ -209,10 +217,12 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  // Updates Firestore with the new profile image URL
-  fun saveImageUrlToFirestore(imageUrl: String) {
-    val userId = auth.currentUser?.uid
-    FirebaseFirestore.getInstance().collection("users").document(userId!!)
+  /**
+   * Update Firestore with the new profile image URL.
+   */
+  private fun saveImageUrlToFirestore(imageUrl: String) {
+    val userId = auth.currentUser?.uid ?: return
+    db.collection("users").document(userId)
       .update("profileImageUrl", imageUrl)
       .addOnSuccessListener {
         Toast.makeText(requireContext(), "Profile Updated!", Toast.LENGTH_SHORT).show()
@@ -222,7 +232,9 @@ class ProfileFragment : Fragment() {
       }
   }
 
-  // Uploads the selected image to Cloudinary using Retrofit.
+  /**
+   * Uploads the selected image to Cloudinary using Retrofit.
+   */
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -236,9 +248,11 @@ class ProfileFragment : Fragment() {
     val file = File(localImagePath)
     val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
     val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
-    // Use your Cloudinary preset and cloud name (adjust these if necessary)
+
+    // Cloudinary preset and cloud name (adjust if needed)
     val preset = "CWC - Content With Coffee"
     val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
+
     val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)
     call.enqueue(object : Callback<CloudinaryUploadResponse> {
       override fun onResponse(
@@ -263,7 +277,9 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  // Saves the selected image locally (temporary) to get a File reference.
+  /**
+   * Saves the selected image locally so we can get a File reference to upload.
+   */
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
