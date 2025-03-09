@@ -53,6 +53,16 @@ class ProfileFragment : Fragment() {
       uploadProfilePicture(it)
     }
   }
+  override fun onResume() {
+    super.onResume()
+    fetchPosts() // Refresh posts when the fragment resumes
+    attachUserSnapshotListener()
+  }
+
+  override fun onPause() {
+    super.onPause()
+    detachUserSnapshotListener()
+  }
 
   override fun onCreateView(
     inflater: LayoutInflater, container: ViewGroup?,

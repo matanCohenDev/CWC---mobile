@@ -23,7 +23,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.squareup.picasso.Picasso
 import de.hdodenhof.circleimageview.CircleImageView
-import java.io.File
 
 class PostAdapter(
   private val postList: MutableList<Post>,
@@ -37,7 +36,6 @@ class PostAdapter(
     val postDescription: TextView = view.findViewById(R.id.post_description)
     val likeButton: ImageView = view.findViewById(R.id.like_button)
     val likeCount: TextView = view.findViewById(R.id.like_count)
-    // רכיבי תגובות
     val etComment: EditText = view.findViewById(R.id.etComment)
     val btnSendComment: Button = view.findViewById(R.id.btnSendComment)
     val rvComments: RecyclerView = view.findViewById(R.id.rvComments)
@@ -53,15 +51,12 @@ class PostAdapter(
     val post = postList[position]
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    // טעינת תמונת הפוסט מהנתיב המקומי באמצעות Glide
     Glide.with(holder.itemView.context)
       .load(post.image_path)
       .into(holder.postImage)
 
-    // הצגת תיאור הפוסט
     holder.postDescription.text = post.description
 
-    // קבלת פרטי המשתמש מ-Firestore להצגת שם ותמונת פרופיל
     FirebaseFirestore.getInstance().collection("users")
       .document(post.user_id)
       .get()
@@ -95,7 +90,6 @@ class PostAdapter(
         holder.profileImage.setImageResource(R.drawable.profile_foreground)
       }
 
-    // מאזינים ללחיצה על תמונת הפרופיל ושם המשתמש – מעבר למסך צפייה בפרופיל המשתמש
     holder.profileImage.setOnClickListener {
       val intent = Intent(context, UserProfileActivity::class.java)
       intent.putExtra("userId", post.user_id)
@@ -107,16 +101,13 @@ class PostAdapter(
       context.startActivity(intent)
     }
 
-    // הצגת מספר הלייקים ועדכון כפתור הלייק
     holder.likeCount.text = post.likes.toString()
     updateLikeUI(holder, post, currentUserId)
 
-    // מאזין ללחיצה על כפתור הלייק (לחיצה רגילה)
     holder.likeButton.setOnClickListener {
       toggleLike(holder, post, currentUserId)
     }
 
-    // הוספת מאזין ללחיצה כפולה על תמונת הפוסט
     val gestureDetector = GestureDetector(holder.itemView.context, object : GestureDetector.SimpleOnGestureListener() {
       override fun onDoubleTap(e: MotionEvent): Boolean {
         toggleLike(holder, post, currentUserId)
@@ -129,7 +120,6 @@ class PostAdapter(
       true
     }
 
-    // טיפול בלחיצה על כפתור "שלח תגובה"
     holder.btnSendComment.setOnClickListener {
       val commentText = holder.etComment.text.toString().trim()
       if (commentText.isEmpty()) {
@@ -150,16 +140,23 @@ class PostAdapter(
           Toast.makeText(context, "תגובה נשלחה", Toast.LENGTH_SHORT).show()
           holder.etComment.text.clear()
           post.comments = updatedComments
-          holder.rvComments.adapter = CommentAdapter(updatedComments)
+          holder.rvComments.adapter = CommentAdapter(updatedComments) { userId ->
+            val intent = Intent(context, UserProfileActivity::class.java)
+            intent.putExtra("userId", userId)
+            context.startActivity(intent)
+          }
         }
         .addOnFailureListener {
           Toast.makeText(context, "שגיאה בשליחת תגובה", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // הצגת רשימת התגובות (אם קיימות)
     holder.rvComments.layoutManager = LinearLayoutManager(context)
-    holder.rvComments.adapter = CommentAdapter(post.comments)
+    holder.rvComments.adapter = CommentAdapter(post.comments) { userId ->
+      val intent = Intent(context, UserProfileActivity::class.java)
+      intent.putExtra("userId", userId)
+      context.startActivity(intent)
+    }
   }
 
   override fun getItemCount(): Int = postList.size

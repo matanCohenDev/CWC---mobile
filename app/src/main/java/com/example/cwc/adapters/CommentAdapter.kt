@@ -12,8 +12,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.squareup.picasso.Picasso
 import de.hdodenhof.circleimageview.CircleImageView
 
-class CommentAdapter(private val commentList: List<Comment>) :
-  RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
+class CommentAdapter(
+  private val commentList: List<Comment>,
+  private val onUsernameClick: (String) -> Unit // Add the click listener
+) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
 
   class CommentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     val commentAvatar: CircleImageView = view.findViewById(R.id.comment_avatar)
@@ -46,7 +48,8 @@ class CommentAdapter(private val commentList: List<Comment>) :
           if (profileUrl.isNotEmpty() &&
             !profileUrl.startsWith("http://") &&
             !profileUrl.startsWith("https://") &&
-            !profileUrl.startsWith("file://")) {
+            !profileUrl.startsWith("file://")
+          ) {
             profileUrl = "file://$profileUrl"
           }
           if (profileUrl.isNotEmpty()) {
@@ -59,6 +62,11 @@ class CommentAdapter(private val commentList: List<Comment>) :
               .into(holder.commentAvatar)
           } else {
             holder.commentAvatar.setImageResource(R.drawable.profile_foreground)
+          }
+
+          // Set click listener on the username
+          holder.commentUserName.setOnClickListener {
+            onUsernameClick(comment.userId)
           }
         } else {
           holder.commentUserName.text = "Unknown User"
