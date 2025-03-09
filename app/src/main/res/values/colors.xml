@@ -1,5 +1,6 @@
 <resources>
   <color name="card_background">#D2B48C</color>
+  <color name="my_Light_primary">#C89664</color>
 
   <color name="title_color">#5D4037</color>
   <color name="text_primary">#3E2723</color>

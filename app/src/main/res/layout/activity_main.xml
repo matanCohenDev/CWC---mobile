@@ -5,7 +5,7 @@
   android:id="@+id/main"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
-  android:background="#88A2C1"
+  android:background="@color/coffee_light"
   tools:context=".MainActivity">
 
   <!-- Container for the fragment -->
