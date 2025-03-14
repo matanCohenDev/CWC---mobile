@@ -332,6 +332,7 @@ class EditProfileActivity : AppCompatActivity() {
         finish()
         true
       }
+
       else -> super.onOptionsItemSelected(item)
     }
   }
