@@ -33,20 +33,17 @@ class EditPostActivity : AppCompatActivity() {
     btnSave = findViewById(R.id.btnSave)
     btnCancel = findViewById(R.id.btnCancel)
 
-    // קבלת נתוני הפוסט מהאינטנט – ודא שמודל Post מממש Serializable או Parcelable
     post = intent.getSerializableExtra("post") as? Post ?: run {
       Toast.makeText(this, "No post data found", Toast.LENGTH_SHORT).show()
       finish()
       return
     }
 
-    // טעינת תמונת הפוסט מהקובץ המקומי
     Glide.with(this)
       .load(post.image_path)
       .into(ivPostImage)
 
 
-    // הצגת תיאור הפוסט הקיים
     etDescription.setText(post.description)
 
     btnSave.setOnClickListener {
@@ -69,7 +66,6 @@ class EditPostActivity : AppCompatActivity() {
       .update("description", newDescription)
       .addOnSuccessListener {
         Toast.makeText(this, "Post updated", Toast.LENGTH_SHORT).show()
-        // מחזירים תוצאה OK כדי שהמסך הקודם יתעדכן
         setResult(Activity.RESULT_OK)
         finish()
       }

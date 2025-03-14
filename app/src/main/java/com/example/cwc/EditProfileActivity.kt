@@ -42,16 +42,12 @@ class EditProfileActivity : AppCompatActivity() {
   private val auth = FirebaseAuth.getInstance()
   private val db = FirebaseFirestore.getInstance()
 
-  // Hold the selected image URI (if any)
   private var selectedImageUri: Uri? = null
-  // Store the old profile image URL so we can delete it later if needed
   private var oldProfileImageUrl: String? = null
 
-  // Use ActivityResult to pick an image
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       selectedImageUri = it
-      // Immediately update the preview with the new image (local URI)
       profileImageView.setImageURI(it)
     }
   }
@@ -72,7 +68,6 @@ class EditProfileActivity : AppCompatActivity() {
     btnSave = findViewById(R.id.edit_btn_save)
     btnCancel = findViewById(R.id.edit_btn_cancel)
 
-    // Load the current profile once on creation
     loadCurrentProfile()
 
     profileImageView.setOnClickListener {
@@ -83,7 +78,6 @@ class EditProfileActivity : AppCompatActivity() {
       saveProfile()
     }
 
-    // Cancel button: simply finish the activity without saving changes.
     btnCancel.setOnClickListener {
       setResult(RESULT_CANCELED)
       finish()
@@ -103,7 +97,7 @@ class EditProfileActivity : AppCompatActivity() {
           etLocation.setText(if (city.isNotEmpty() && country.isNotEmpty()) "$city, $country" else country)
 
           val profileImageUrl = document.getString("profileImageUrl")
-          oldProfileImageUrl = profileImageUrl  // Save old image URL for later deletion
+          oldProfileImageUrl = profileImageUrl
           if (!profileImageUrl.isNullOrEmpty()) {
             if (profileImageUrl.startsWith("http://") || profileImageUrl.startsWith("https://")) {
               Picasso.get()
@@ -166,17 +160,13 @@ class EditProfileActivity : AppCompatActivity() {
     )
 
     if (selectedImageUri != null) {
-      // If a new image was selected, upload it first.
       uploadImageToCloudinary(selectedImageUri!!, onSuccess = { secureUrl ->
         Log.d("EditProfileActivity", "New secureUrl: $secureUrl")
         updates["profileImageUrl"] = secureUrl
-        // Delete old image from Cloudinary if it exists and is different
         if (!oldProfileImageUrl.isNullOrEmpty() && oldProfileImageUrl != secureUrl) {
           deleteOldImage(oldProfileImageUrl!!)
         }
-        // Update Firestore with the new image URL and other changes
         updateProfileInFirestore(userId, updates)
-        // Immediately update the UI with the new image (force no caching)
         Picasso.get()
           .load(secureUrl)
           .placeholder(R.drawable.profile_foreground)
@@ -194,7 +184,6 @@ class EditProfileActivity : AppCompatActivity() {
         Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
       })
     } else {
-      // If no new image was selected, simply update other profile details.
       updateProfileInFirestore(userId, updates)
     }
   }
@@ -223,9 +212,6 @@ class EditProfileActivity : AppCompatActivity() {
       }
   }
 
-  /**
-   * Uploads the selected image to Cloudinary.
-   */
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -266,7 +252,6 @@ class EditProfileActivity : AppCompatActivity() {
     })
   }
 
-  // Saves the image locally temporarily.
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
@@ -289,25 +274,17 @@ class EditProfileActivity : AppCompatActivity() {
     }
   }
 
-  /**
-   * Deletes the old image from Cloudinary.
-   * Note: This requires your Cloudinary API secret to generate the signature.
-   * For production, it is recommended to perform such sensitive operations on your backend.
-   */
   private fun deleteOldImage(oldImageUrl: String) {
     val publicId = getPublicId(oldImageUrl)
     if (publicId == null) {
       Log.e("EditProfileActivity", "Could not extract public ID from URL")
       return
     }
-    val timestamp = System.currentTimeMillis() / 1000  // in seconds
-    // Build the string for signature: "public_id={publicId}&timestamp={timestamp}{API_SECRET}"
-    // IMPORTANT: Do not expose your API secret in a production app.
+    val timestamp = System.currentTimeMillis() / 1000
     val apiSecret = "UIOi_lsef1LfVRNGKmLBCC3yjt8"
     val signatureData = "public_id=$publicId&timestamp=$timestamp"
     val signature = sha1(signatureData + apiSecret)
 
-    // Call the Cloudinary delete endpoint. (Make sure your CloudinaryService.api.deleteImage is implemented.)
     CloudinaryService.api.deleteImage( "dtdw1bmq4",publicId, timestamp, signature, "316232596576643")
       .enqueue(object : Callback<CloudinaryUploadResponse> {
         override fun onResponse(call: Call<CloudinaryUploadResponse>, response: Response<CloudinaryUploadResponse>) {
@@ -323,18 +300,12 @@ class EditProfileActivity : AppCompatActivity() {
       })
   }
 
-  /**
-   * Extracts the public ID from the Cloudinary image URL.
-   * Example URL: https://res.cloudinary.com/dtdw1bmq4/image/upload/v1741431603/sqftrgrbzdrg0smqfgiu.jpg
-   * This method extracts "sqftrgrbzdrg0smqfgiu" from the URL.
-   */
   private fun getPublicId(imageUrl: String): String? {
     try {
       val urlWithoutQuery = imageUrl.split("?")[0]
       val index = urlWithoutQuery.indexOf("/upload/")
       if (index != -1) {
         val publicIdWithVersion = urlWithoutQuery.substring(index + "/upload/".length)
-        // Remove version (if present) and file extension:
         val parts = publicIdWithVersion.split("/")
         val publicIdWithExtension = if (parts[0].startsWith("v") && parts.size > 1) {
           parts.drop(1).joinToString("/")
@@ -350,9 +321,6 @@ class EditProfileActivity : AppCompatActivity() {
     return null
   }
 
-  /**
-   * Computes the SHA-1 hash of the given input string.
-   */
   private fun sha1(input: String): String {
     val bytes = MessageDigest.getInstance("SHA-1").digest(input.toByteArray())
     return bytes.joinToString("") { "%02x".format(it) }
