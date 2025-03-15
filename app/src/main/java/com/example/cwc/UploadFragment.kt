@@ -101,20 +101,16 @@ class UploadFragment : Fragment() {
     })
   }
 
-  // Uploads the post by uploading the image to Cloudinary and then saving the post to Firestore.
   private fun uploadPost(imageUri: Uri, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
-    // Upload the image to Cloudinary
     uploadImageToCloudinary(imageUri, onSuccess = { secureUrl ->
-      // Once the image is uploaded, save the post with the Cloudinary URL.
       savePostToFirestore(secureUrl, description)
     }, onFailure = { errorMsg ->
       Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
     })
   }
 
-  // Saves the post data to Firestore with the image URL from Cloudinary.
   private fun savePostToFirestore(imageUrl: String, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
