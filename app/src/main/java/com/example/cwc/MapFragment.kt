@@ -69,7 +69,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cafe nero", ignoreCase = true) -> {
-                // Dummy data for Cafe Nero in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val netanya = LatLng(32.3214, 34.8535)
                 val beerSheva = LatLng(31.2518, 34.7913)
@@ -82,7 +81,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("coffee bean", ignoreCase = true) -> {
-                // Dummy data for Coffee Bean & Tea Leaf in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val jerusalem = LatLng(31.7683, 35.2137)
                 val ramatGan = LatLng(32.0684, 34.8245)
@@ -95,7 +93,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cafe cafe", ignoreCase = true) -> {
-                // Dummy data for Cafe Cafe in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val rishonLezion = LatLng(31.9714, 34.7925)
                 val netanya = LatLng(32.3214, 34.8535)
@@ -108,7 +105,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cofix", ignoreCase = true) -> {
-                // Dummy data for Cofix in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val jerusalem = LatLng(31.7683, 35.2137)
                 val netanya = LatLng(32.3214, 34.8535)
@@ -121,7 +117,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("gansipur", ignoreCase = true) -> {
-                // Dummy data for Gansipur in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val jerusalem = LatLng(31.7683, 35.2137)
                 val haifa = LatLng(32.7940, 34.9896)
