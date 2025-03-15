@@ -204,9 +204,7 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  /**
-   * Update Firestore with the new profile image URL.
-   */
+
   private fun saveImageUrlToFirestore(imageUrl: String) {
     val userId = auth.currentUser?.uid ?: return
     db.collection("users").document(userId)
@@ -219,9 +217,7 @@ class ProfileFragment : Fragment() {
       }
   }
 
-  /**
-   * Uploads the selected image to Cloudinary using Retrofit.
-   */
+
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -236,7 +232,6 @@ class ProfileFragment : Fragment() {
     val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
     val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
-    // Cloudinary preset and cloud name (adjust if needed)
     val preset = "CWC - Content With Coffee"
     val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
 
@@ -264,9 +259,7 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  /**
-   * Saves the selected image locally so we can get a File reference to upload.
-   */
+
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
