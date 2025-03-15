@@ -33,7 +33,6 @@ class CommentAdapter(
     val comment = commentList[position]
     holder.commentText.text = comment.text
 
-    // שליפת פרטי המשתמש מה-Firestore לצורך שם ותמונת פרופיל
     FirebaseFirestore.getInstance().collection("users")
       .document(comment.userId)
       .get()
