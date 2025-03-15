@@ -14,7 +14,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 
 class CommentAdapter(
   private val commentList: List<Comment>,
-  private val onUsernameClick: (String) -> Unit // Add the click listener
+  private val onUsernameClick: (String) -> Unit
 ) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
 
   class CommentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
