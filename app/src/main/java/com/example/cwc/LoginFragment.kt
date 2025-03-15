@@ -73,7 +73,6 @@ class LoginFragment : Fragment() {
         if (!documents.isEmpty) {
           val user = documents.documents[0].toObject(User::class.java)
           user?.let {
-            // Instead of downloading the full image as a blob, simply store the user with a null blob.
             storeUser(it.copy(imageBlob = null))
           }
         }
@@ -91,8 +90,6 @@ class LoginFragment : Fragment() {
       val navController = findNavController()
       if (navController.currentDestination?.id == R.id.loginFragment) {
         navController.navigate(R.id.action_loginFragment_to_homeFragment)
-      } else {
-        // Navigation already handled
       }
     }
   }
