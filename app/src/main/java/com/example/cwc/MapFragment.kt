@@ -1,19 +1,20 @@
 package com.example.cwc
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 
 class MapFragment : Fragment(), OnMapReadyCallback {
@@ -48,8 +49,24 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+
+        // Center the map on Israel
         val israelCenter = LatLng(31.0461, 34.8516)
         mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(israelCenter, 7f))
+
+        // Set a marker click listener to open more details
+        mMap?.setOnMarkerClickListener { marker ->
+            openCoffeeShopDetails(marker)
+            true  // Indicates we have consumed the event.
+        }
+    }
+
+    // Helper function to add a marker with a description
+    private fun addCoffeeMarker(location: LatLng, title: String, description: String) {
+        val marker = mMap?.addMarker(
+            MarkerOptions().position(location).title(title)
+        )
+        marker?.tag = description
     }
 
     private fun searchCoffeeShops(query: String) {
@@ -62,10 +79,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val haifa = LatLng(32.7940, 34.9896)
                 val rishonLezion = LatLng(31.9714, 34.7925)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Aroma Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(jerusalem).title("Aroma Jerusalem"))
-                mMap?.addMarker(MarkerOptions().position(haifa).title("Aroma Haifa"))
-                mMap?.addMarker(MarkerOptions().position(rishonLezion).title("Aroma Rishon LeZion"))
+                addCoffeeMarker(telAviv, "Aroma Tel Aviv", "A cozy café with a vibrant atmosphere in Tel Aviv.")
+                addCoffeeMarker(jerusalem, "Aroma Jerusalem", "Known for its artisan brews in the heart of Jerusalem.")
+                addCoffeeMarker(haifa, "Aroma Haifa", "Enjoy sea views with your coffee in Haifa.")
+                addCoffeeMarker(rishonLezion, "Aroma Rishon LeZion", "A popular spot for both locals and visitors.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cafe nero", ignoreCase = true) -> {
@@ -74,10 +91,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val beerSheva = LatLng(31.2518, 34.7913)
                 val haifa = LatLng(32.7940, 34.9896)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Cafe Nero Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(netanya).title("Cafe Nero Netanya"))
-                mMap?.addMarker(MarkerOptions().position(beerSheva).title("Cafe Nero Beer Sheva"))
-                mMap?.addMarker(MarkerOptions().position(haifa).title("Cafe Nero Haifa"))
+                addCoffeeMarker(telAviv, "Cafe Nero Tel Aviv", "Stylish ambiance with modern decor in Tel Aviv.")
+                addCoffeeMarker(netanya, "Cafe Nero Netanya", "A favorite meeting spot in Netanya.")
+                addCoffeeMarker(beerSheva, "Cafe Nero Beer Sheva", "Comfortable seating and quality brews in Beer Sheva.")
+                addCoffeeMarker(haifa, "Cafe Nero Haifa", "Relax and enjoy your coffee with a view in Haifa.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("coffee bean", ignoreCase = true) -> {
@@ -86,10 +103,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val ramatGan = LatLng(32.0684, 34.8245)
                 val haifa = LatLng(32.7940, 34.9896)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Coffee Bean Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(jerusalem).title("Coffee Bean Jerusalem"))
-                mMap?.addMarker(MarkerOptions().position(ramatGan).title("Coffee Bean Ramat Gan"))
-                mMap?.addMarker(MarkerOptions().position(haifa).title("Coffee Bean Haifa"))
+                addCoffeeMarker(telAviv, "Coffee Bean Tel Aviv", "A trendy café known for its unique blends in Tel Aviv.")
+                addCoffeeMarker(jerusalem, "Coffee Bean Jerusalem", "Experience a blend of tradition and innovation.")
+                addCoffeeMarker(ramatGan, "Coffee Bean Ramat Gan", "Popular for its lively vibe and specialty coffees.")
+                addCoffeeMarker(haifa, "Coffee Bean Haifa", "Offers a scenic view along with excellent coffee.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cafe cafe", ignoreCase = true) -> {
@@ -98,10 +115,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val netanya = LatLng(32.3214, 34.8535)
                 val jerusalem = LatLng(31.7683, 35.2137)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Cafe Cafe Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(rishonLezion).title("Cafe Cafe Rishon LeZion"))
-                mMap?.addMarker(MarkerOptions().position(netanya).title("Cafe Cafe Netanya"))
-                mMap?.addMarker(MarkerOptions().position(jerusalem).title("Cafe Cafe Jerusalem"))
+                addCoffeeMarker(telAviv, "Cafe Cafe Tel Aviv", "Bright and modern space in Tel Aviv.")
+                addCoffeeMarker(rishonLezion, "Cafe Cafe Rishon LeZion", "A casual spot for great coffee in Rishon LeZion.")
+                addCoffeeMarker(netanya, "Cafe Cafe Netanya", "Relax in a friendly atmosphere in Netanya.")
+                addCoffeeMarker(jerusalem, "Cafe Cafe Jerusalem", "A must-visit spot in Jerusalem for coffee lovers.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("cofix", ignoreCase = true) -> {
@@ -110,10 +127,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val netanya = LatLng(32.3214, 34.8535)
                 val beerSheva = LatLng(31.2518, 34.7913)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Cofix Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(jerusalem).title("Cofix Jerusalem"))
-                mMap?.addMarker(MarkerOptions().position(netanya).title("Cofix Netanya"))
-                mMap?.addMarker(MarkerOptions().position(beerSheva).title("Cofix Beer Sheva"))
+                addCoffeeMarker(telAviv, "Cofix Tel Aviv", "Enjoy a modern twist on classic coffee drinks in Tel Aviv.")
+                addCoffeeMarker(jerusalem, "Cofix Jerusalem", "A trendy café with a comfortable setting in Jerusalem.")
+                addCoffeeMarker(netanya, "Cofix Netanya", "A hotspot in Netanya for coffee enthusiasts.")
+                addCoffeeMarker(beerSheva, "Cofix Beer Sheva", "Known for its quick service and quality coffee in Beer Sheva.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
             query.equals("gansipur", ignoreCase = true) -> {
@@ -122,15 +139,27 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 val haifa = LatLng(32.7940, 34.9896)
                 val netanya = LatLng(32.3214, 34.8535)
 
-                mMap?.addMarker(MarkerOptions().position(telAviv).title("Gansipur Tel Aviv"))
-                mMap?.addMarker(MarkerOptions().position(jerusalem).title("Gansipur Jerusalem"))
-                mMap?.addMarker(MarkerOptions().position(haifa).title("Gansipur Haifa"))
-                mMap?.addMarker(MarkerOptions().position(netanya).title("Gansipur Netanya"))
+                addCoffeeMarker(telAviv, "Gansipur Tel Aviv", "A vibrant café with a unique menu in Tel Aviv.")
+                addCoffeeMarker(jerusalem, "Gansipur Jerusalem", "Mixing tradition with modern coffee culture in Jerusalem.")
+                addCoffeeMarker(haifa, "Gansipur Haifa", "Offers an extensive coffee selection in Haifa.")
+                addCoffeeMarker(netanya, "Gansipur Netanya", "A friendly spot with cozy seating in Netanya.")
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
-            else ->  {
-                Toast.makeText(requireContext(), "No dummy data available for \"$query\"", Toast.LENGTH_SHORT).show()
+            else -> {
+                Toast.makeText(requireContext(), "No data available for \"$query\"", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // Opens a dialog displaying more information about the selected coffee shop.
+    private fun openCoffeeShopDetails(marker: Marker) {
+        val title = marker.title ?: "Coffee Shop"
+        val description = marker.tag as? String ?: "No additional info available."
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(title)
+            .setMessage(description)
+            .setPositiveButton("Close", null)
+            .show()
     }
 }
