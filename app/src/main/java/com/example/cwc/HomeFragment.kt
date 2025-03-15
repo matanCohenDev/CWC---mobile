@@ -113,25 +113,21 @@ class HomeFragment : Fragment() {
   ): View {
     val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-    // אתחול SwipeRefreshLayout
     swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
     swipeRefreshLayout.setOnRefreshListener { fetchPosts() }
 
-    // אתחול RecyclerView והגדרת האדפטור
     recyclerView = view.findViewById(R.id.recycler_view)
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
     postAdapter = PostAdapter(postList, requireContext())
     recyclerView.adapter = postAdapter
 
-    // יצירת ViewModel למשתמשים (למרות ששיטה זו יכולה להחזיר נתונים, נעדיף לשלוף ישירות את המשתמש מ-Firestore)
     val userDao = AppDatabase.getDatabase(requireContext()).userDao()
     val repository = UserRepository(userDao)
     val factory = UserViewModelFactory(repository)
     userViewModel = ViewModelProvider(this, factory).get(UserViewModel::class.java)
 
-    // קריאה לטעינת המשתמשים מה-ViewModel (לצורך עדכון לוקאלי, אם נדרש)
     viewLifecycleOwner.lifecycleScope.launch {
-      delay(1000) // השהייה קטנה כדי לוודא שהנתונים נטענים
+      delay(1000)
       userViewModel.getUsers()
     }
     userViewModel.users.observe(viewLifecycleOwner) { users ->
@@ -140,14 +136,11 @@ class HomeFragment : Fragment() {
         Toast.makeText(requireActivity(), "Not logged in", Toast.LENGTH_SHORT).show()
         findNavController().navigate(R.id.action_homeFragment_to_logoutFragment)
       } else {
-        // ניתן להשתמש בנתונים מה-ViewModel, אך אם רוצים להיות בטוחים – עדיף לשלוף ישירות
         renderNav(users[0])
       }
     }
 
-    // טעינת פוסטים מהשרת
     fetchPosts()
-    // שליפת נתוני המשתמש מה-Firestore לפי userId והצגת הנתונים בתפריט התחתון
     fetchCurrentUserAndRenderNav()
 
     return view
