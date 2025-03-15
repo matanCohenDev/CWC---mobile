@@ -43,7 +43,6 @@ class CommentAdapter(
           holder.commentUserName.text = "$firstName $lastName"
           var profileUrl = document.getString("profileImageUrl") ?: ""
           Log.d("CommentAdapter", "Profile URL for user ${comment.userId}: $profileUrl")
-          // אם הנתיב אינו מתחיל ב-http://, https:// או file://, מוסיפים את הפריפיקס file://
           if (profileUrl.isNotEmpty() &&
             !profileUrl.startsWith("http://") &&
             !profileUrl.startsWith("https://") &&
