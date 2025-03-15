@@ -14,7 +14,7 @@ import de.hdodenhof.circleimageview.CircleImageView
 
 class CommentAdapter(
   private val commentList: List<Comment>,
-  private val onUsernameClick: (String) -> Unit // Add the click listener
+  private val onUsernameClick: (String) -> Unit
 ) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
 
   class CommentViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -33,7 +33,6 @@ class CommentAdapter(
     val comment = commentList[position]
     holder.commentText.text = comment.text
 
-    // שליפת פרטי המשתמש מה-Firestore לצורך שם ותמונת פרופיל
     FirebaseFirestore.getInstance().collection("users")
       .document(comment.userId)
       .get()
@@ -44,7 +43,6 @@ class CommentAdapter(
           holder.commentUserName.text = "$firstName $lastName"
           var profileUrl = document.getString("profileImageUrl") ?: ""
           Log.d("CommentAdapter", "Profile URL for user ${comment.userId}: $profileUrl")
-          // אם הנתיב אינו מתחיל ב-http://, https:// או file://, מוסיפים את הפריפיקס file://
           if (profileUrl.isNotEmpty() &&
             !profileUrl.startsWith("http://") &&
             !profileUrl.startsWith("https://") &&
