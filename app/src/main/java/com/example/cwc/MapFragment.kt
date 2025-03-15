@@ -128,7 +128,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 mMap?.addMarker(MarkerOptions().position(netanya).title("Gansipur Netanya"))
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
             }
-            else -> {
+            else ->  {
                 Toast.makeText(requireContext(), "No dummy data available for \"$query\"", Toast.LENGTH_SHORT).show()
             }
         }
