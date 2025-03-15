@@ -48,7 +48,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        // Center the map on Israel
         val israelCenter = LatLng(31.0461, 34.8516)
         mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(israelCenter, 7f))
     }
@@ -58,7 +57,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         when {
             query.equals("aroma", ignoreCase = true) -> {
-                // Dummy data for Aroma coffee shops in Israel
                 val telAviv = LatLng(32.0853, 34.7818)
                 val jerusalem = LatLng(31.7683, 35.2137)
                 val haifa = LatLng(32.7940, 34.9896)
