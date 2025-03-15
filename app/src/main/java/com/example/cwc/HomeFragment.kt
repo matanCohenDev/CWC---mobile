@@ -34,7 +34,7 @@ class HomeFragment : Fragment() {
   private lateinit var postAdapter: PostAdapter
   private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
-  // פונקציה שמוסיפה את ה-BottomNavFragment עם שם המשתמש
+
   fun renderNav(user: User) {
     Log.d("HomeFragment", "Rendering BottomNavFragment for user: ${user.firstname} ${user.lastname}")
     val childFragment = BottomNavFragment()
@@ -48,7 +48,7 @@ class HomeFragment : Fragment() {
       .commit()
   }
 
-  // שליפת הפוסטים מ-Firestore
+
   private fun fetchPosts() {
     swipeRefreshLayout.isRefreshing = true
     FirebaseFirestore.getInstance().collection("posts")
@@ -70,7 +70,7 @@ class HomeFragment : Fragment() {
       }
   }
 
-  // שליפת נתוני המשתמש הנוכחי מ-Firestore לפי userId
+
   private fun fetchCurrentUserAndRenderNav() {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     if (currentUserId == null) {
