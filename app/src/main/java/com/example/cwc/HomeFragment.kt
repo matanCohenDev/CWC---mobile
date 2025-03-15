@@ -48,7 +48,7 @@ class HomeFragment : Fragment() {
       .commit()
   }
 
-  // שליפת הפוסטים מ-Firestore
+
   private fun fetchPosts() {
     swipeRefreshLayout.isRefreshing = true
     FirebaseFirestore.getInstance().collection("posts")
