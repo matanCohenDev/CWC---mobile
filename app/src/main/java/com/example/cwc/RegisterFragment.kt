@@ -22,7 +22,6 @@ class RegisterFragment : Fragment() {
   private lateinit var etEmail: EditText
   private lateinit var etFirstName: EditText
   private lateinit var etLastName: EditText
-  // הסרת השדה etCity, כיוון שה-XML שלך לא כולל אותו.
   private lateinit var etCountry: EditText
   private lateinit var etPassword: EditText
   private lateinit var btnSignUp: Button
@@ -72,7 +71,6 @@ class RegisterFragment : Fragment() {
           saveUserToFirestore(it, firstName, lastName, country)
         }
         Toast.makeText(requireContext(), "Successfully Signed Up", Toast.LENGTH_SHORT).show()
-        // התנתק מהמשתמש כדי שכשמעבירים לדף הלוג אין, המשתמש לא יהיה מחובר
         auth.signOut()
         findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
       } else {

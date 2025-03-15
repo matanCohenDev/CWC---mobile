@@ -53,7 +53,7 @@ class ProfileFragment : Fragment() {
   }
   override fun onResume() {
     super.onResume()
-    fetchPosts() // Refresh posts when the fragment resumes
+    fetchPosts()
     attachUserSnapshotListener()
   }
 
@@ -83,7 +83,7 @@ class ProfileFragment : Fragment() {
 
     swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout_profile)
     swipeRefreshLayout.setOnRefreshListener {
-      fetchPosts() // Refresh the user's posts
+      fetchPosts()
     }
 
     recyclerView = view.findViewById(R.id.recycler_view_profile)
@@ -106,10 +106,7 @@ class ProfileFragment : Fragment() {
     detachUserSnapshotListener()
   }
 
-  /**
-   * Attaches a real-time listener to the current user's Firestore document.
-   * Whenever the document changes (e.g., new profileImageUrl), the UI is updated immediately.
-   */
+
   private fun attachUserSnapshotListener() {
     val userId = auth.currentUser?.uid ?: return
     userDocListener = db.collection("users").document(userId)
@@ -128,16 +125,13 @@ class ProfileFragment : Fragment() {
 
           Log.d("ProfileFragment", "Fetched user details: firstname=$firstName, lastname=$lastName, city=$city, country=$country, email=$email")
 
-          // Update text fields
           view?.findViewById<TextView>(R.id.fullname_text)?.text = "$firstName $lastName"
           view?.findViewById<TextView>(R.id.location_text)?.text = country
           view?.findViewById<TextView>(R.id.email_text)?.text = email
 
-          // Update profile image (with cache-busting if URL is available)
           val profileImage = view?.findViewById<ImageView>(R.id.profile_picture)
           if (!profileImageUrl.isNullOrEmpty()) {
             if (profileImageUrl.startsWith("http://") || profileImageUrl.startsWith("https://")) {
-              // Append timestamp to bust the cache
               val finalUrl = "$profileImageUrl?ts=${System.currentTimeMillis()}"
               Picasso.get()
                 .load(finalUrl)
@@ -147,7 +141,6 @@ class ProfileFragment : Fragment() {
                 .memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE)
                 .into(profileImage)
             } else {
-              // If it's a local path, decode from file
               val bitmap = BitmapFactory.decodeFile(profileImageUrl)
               if (bitmap != null) {
                 profileImage?.setImageBitmap(bitmap)
@@ -156,25 +149,19 @@ class ProfileFragment : Fragment() {
               }
             }
           } else {
-            // No profile image set
             profileImage?.setImageResource(R.drawable.profile_foreground)
           }
         }
       }
   }
 
-  /**
-   * Detaches the snapshot listener when the fragment is not visible.
-   */
+
   private fun detachUserSnapshotListener() {
     userDocListener?.remove()
     userDocListener = null
   }
 
-  /**
-   * Fetch the user's posts from Firestore (one-time).
-   * If you want real-time posts, you can attach a snapshot listener here as well.
-   */
+
   private fun fetchPosts() {
     swipeRefreshLayout.isRefreshing = true
     val currentUserId = auth.currentUser?.uid
@@ -207,10 +194,7 @@ class ProfileFragment : Fragment() {
       }
   }
 
-  /**
-   * Called when the user selects an image from the gallery. We upload it to Cloudinary
-   * and then update Firestore with the new URL.
-   */
+
   private fun uploadProfilePicture(imageUri: Uri) {
     uploadImageToCloudinary(imageUri, onSuccess = { secureUrl ->
       saveImageUrlToFirestore(secureUrl)
@@ -220,9 +204,7 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  /**
-   * Update Firestore with the new profile image URL.
-   */
+
   private fun saveImageUrlToFirestore(imageUrl: String) {
     val userId = auth.currentUser?.uid ?: return
     db.collection("users").document(userId)
@@ -235,9 +217,7 @@ class ProfileFragment : Fragment() {
       }
   }
 
-  /**
-   * Uploads the selected image to Cloudinary using Retrofit.
-   */
+
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -252,7 +232,6 @@ class ProfileFragment : Fragment() {
     val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
     val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
-    // Cloudinary preset and cloud name (adjust if needed)
     val preset = "CWC - Content With Coffee"
     val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
 
@@ -280,9 +259,7 @@ class ProfileFragment : Fragment() {
     })
   }
 
-  /**
-   * Saves the selected image locally so we can get a File reference to upload.
-   */
+
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
