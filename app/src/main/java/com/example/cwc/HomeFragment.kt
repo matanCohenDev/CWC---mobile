@@ -140,9 +140,7 @@ class HomeFragment : Fragment() {
       }
     }
 
-    // טעינת פוסטים מהשרת
     fetchPosts()
-    // שליפת נתוני המשתמש מה-Firestore לפי userId והצגת הנתונים בתפריט התחתון
     fetchCurrentUserAndRenderNav()
 
     return view
