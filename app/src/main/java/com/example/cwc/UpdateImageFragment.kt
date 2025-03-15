@@ -179,6 +179,8 @@ class UpdateImageActivity : AppCompatActivity() {
       override fun onFailure(call: Call<CloudinaryUploadResponse>, t: Throwable) {
         onFailure("Upload failed: ${t.message}")
       }
+
+
     })
   }
 }

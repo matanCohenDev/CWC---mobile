@@ -16,12 +16,10 @@ class BottomNavFragment : Fragment() {
     inflater: LayoutInflater, container: ViewGroup?,
     savedInstanceState: Bundle?
   ): View? {
-    // Inflate the layout that contains your BottomNavigationView
     val view = inflater.inflate(R.layout.fragment_bottom_nav, container, false)
     val navigationBar = view.findViewById<BottomNavigationView>(R.id.bottom_navigation)
     val currentPage = arguments?.getString("current_page")
 
-    // Set the selected item based on the current page
     when (currentPage) {
       "home" -> navigationBar.selectedItemId = R.id.home
       "profile" -> navigationBar.selectedItemId = R.id.profile
@@ -82,7 +80,6 @@ class BottomNavFragment : Fragment() {
         "logout"  -> findNavController().navigate(R.id.action_uploadFragment_to_logoutFragment)
       }
       else -> {
-        // Optional: Use a global action if the current page isn't known
         findNavController().navigate(R.id.action_global_cafeMapFragment)
       }
     }
