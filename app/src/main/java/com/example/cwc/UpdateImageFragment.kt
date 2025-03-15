@@ -180,6 +180,7 @@ class UpdateImageActivity : AppCompatActivity() {
         onFailure("Upload failed: ${t.message}")
       }
 
+
     })
   }
 }
