@@ -26,6 +26,7 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+
 class HomeFragment : Fragment() {
 
   private lateinit var userViewModel: UserViewModel
