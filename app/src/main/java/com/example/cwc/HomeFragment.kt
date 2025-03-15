@@ -34,7 +34,7 @@ class HomeFragment : Fragment() {
   private lateinit var postAdapter: PostAdapter
   private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
-  // פונקציה שמוסיפה את ה-BottomNavFragment עם שם המשתמש
+
   fun renderNav(user: User) {
     Log.d("HomeFragment", "Rendering BottomNavFragment for user: ${user.firstname} ${user.lastname}")
     val childFragment = BottomNavFragment()
