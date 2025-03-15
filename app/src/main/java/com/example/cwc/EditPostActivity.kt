@@ -73,4 +73,6 @@ class EditPostActivity : AppCompatActivity() {
         Toast.makeText(this, "Failed to update post: ${e.message}", Toast.LENGTH_SHORT).show()
       }
   }
+
+
 }
