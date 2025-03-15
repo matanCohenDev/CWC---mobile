@@ -70,7 +70,7 @@ class HomeFragment : Fragment() {
       }
   }
 
-  // שליפת נתוני המשתמש הנוכחי מ-Firestore לפי userId
+
   private fun fetchCurrentUserAndRenderNav() {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     if (currentUserId == null) {
