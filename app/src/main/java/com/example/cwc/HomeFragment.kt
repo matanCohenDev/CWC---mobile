@@ -113,11 +113,9 @@ class HomeFragment : Fragment() {
   ): View {
     val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-    // אתחול SwipeRefreshLayout
     swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
     swipeRefreshLayout.setOnRefreshListener { fetchPosts() }
 
-    // אתחול RecyclerView והגדרת האדפטור
     recyclerView = view.findViewById(R.id.recycler_view)
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
     postAdapter = PostAdapter(postList, requireContext())
