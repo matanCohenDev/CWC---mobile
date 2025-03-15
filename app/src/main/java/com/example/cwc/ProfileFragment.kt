@@ -44,10 +44,8 @@ class ProfileFragment : Fragment() {
   private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-  // Real-time listener registration for the user doc
   private var userDocListener: ListenerRegistration? = null
 
-  // Registration for picking an image from the gallery
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       uploadProfilePicture(it)
@@ -70,7 +68,6 @@ class ProfileFragment : Fragment() {
   ): View? {
     val view = inflater.inflate(R.layout.fragment_profile, container, false)
 
-    // Set up bottom navigation fragment
     val childFragment = BottomNavFragment()
     val bundle = Bundle()
     bundle.putString("current_page", "profile")
@@ -79,25 +76,21 @@ class ProfileFragment : Fragment() {
       .replace(R.id.navbar_container, childFragment)
       .commit()
 
-    // Click to edit profile picture -> Launch EditProfileActivity
     view.findViewById<View>(R.id.edit_profile_picture_text).setOnClickListener {
       val intent = android.content.Intent(requireContext(), EditProfileActivity::class.java)
       startActivity(intent)
     }
 
-    // Initialize SwipeRefreshLayout
     swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout_profile)
     swipeRefreshLayout.setOnRefreshListener {
       fetchPosts() // Refresh the user's posts
     }
 
-    // Initialize RecyclerView for user's posts
     recyclerView = view.findViewById(R.id.recycler_view_profile)
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
     profilePostAdapter = ProfilePostAdapter(postList, requireContext())
     recyclerView.adapter = profilePostAdapter
 
-    // Fetch the user's posts once on creation
     fetchPosts()
 
     return view
