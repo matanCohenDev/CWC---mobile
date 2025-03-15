@@ -30,7 +30,6 @@ class UserProfileActivity : AppCompatActivity() {
   private val EDIT_PROFILE_REQUEST = 1001
   private var currentUserId: String = ""
 
-  // Real-time Firestore listener for the user document
   private var userDocListener: ListenerRegistration? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
