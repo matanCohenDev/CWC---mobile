@@ -26,10 +26,12 @@ import java.io.File
 import java.io.FileOutputStream
 
 class UploadFragment : Fragment() {
+
   private var selectedImageUri: Uri? = null
   private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
+  // Launcher for picking an image
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       selectedImageUri = it
@@ -37,10 +39,12 @@ class UploadFragment : Fragment() {
     }
   }
 
+  // Opens the gallery to pick an image
   private fun openGallery() {
     pickImageLauncher.launch("image/*")
   }
 
+  // Saves the picked image locally before uploading to Cloudinary
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
@@ -63,6 +67,7 @@ class UploadFragment : Fragment() {
     }
   }
 
+  // Uploads the local file to Cloudinary
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -101,22 +106,29 @@ class UploadFragment : Fragment() {
     })
   }
 
+  // Uploads the post data (image URL + description) to Firestore
   private fun uploadPost(imageUri: Uri, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
-    uploadImageToCloudinary(imageUri, onSuccess = { secureUrl ->
-      savePostToFirestore(secureUrl, description)
-    }, onFailure = { errorMsg ->
-      Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
-    })
+    // First upload the selected image to Cloudinary
+    uploadImageToCloudinary(
+      imageUri,
+      onSuccess = { secureUrl ->
+        savePostToFirestore(secureUrl, description)
+      },
+      onFailure = { errorMsg ->
+        Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_SHORT).show()
+      }
+    )
   }
 
+  // Saves the post to Firestore
   private fun savePostToFirestore(imageUrl: String, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
     val post = hashMapOf(
       "user_id" to userId,
-      "image_path" to imageUrl,  // Now stores the Cloudinary URL
+      "image_path" to imageUrl,
       "description" to description,
       "timestamp" to System.currentTimeMillis(),
       "likes" to 0,
@@ -136,7 +148,8 @@ class UploadFragment : Fragment() {
   }
 
   override fun onCreateView(
-    inflater: LayoutInflater, container: ViewGroup?,
+    inflater: LayoutInflater,
+    container: ViewGroup?,
     savedInstanceState: Bundle?
   ): View {
     val view = inflater.inflate(R.layout.fragment_upload, container, false)
@@ -147,6 +160,17 @@ class UploadFragment : Fragment() {
       title = "Upload Post"
     }
 
+    // Bottom Nav Integration:
+    // Make sure you have a container (FrameLayout) in fragment_upload.xml with id = navbar_container
+    val childFragment = BottomNavFragment()
+    val bundle = Bundle()
+    bundle.putString("current_page", "upload")
+    childFragment.arguments = bundle
+    childFragmentManager.beginTransaction()
+      .replace(R.id.navbar_container, childFragment)
+      .commit()
+
+    // Buttons
     view.findViewById<Button>(R.id.upload_button).setOnClickListener {
       openGallery()
     }
@@ -163,6 +187,7 @@ class UploadFragment : Fragment() {
     return view
   }
 
+  // Handle the back arrow in the action bar
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
     return when (item.itemId) {
       android.R.id.home -> {
