@@ -128,9 +128,9 @@ class HomeFragment : Fragment() {
           val main = jsonObject.getJSONObject("main")
           val temp = main.getDouble("temp")
           val recommendation = when {
-            temp < 10 -> "It's chilly at ${temp}°C! How about a hot cappuccino?"
-            temp in 10.0..20.0 -> "It's ${temp}°C, perfect weather for a classic latte."
-            else -> "It's ${temp}°C outside! Try an iced coffee for a refreshing twist!"
+            temp < 10 -> "It's chilly! How about a hot cappuccino?"
+            temp in 10.0..20.0 -> "Perfect weather for a classic latte."
+            else -> "Warm outside? Try an iced coffee for a refreshing twist!"
           }
 
           // Now update the UI on the main thread
