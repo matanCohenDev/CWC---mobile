@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -23,9 +24,13 @@ import com.example.cwc.viewmodel.UserViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 
 class HomeFragment : Fragment() {
 
@@ -35,6 +40,7 @@ class HomeFragment : Fragment() {
   private lateinit var postAdapter: PostAdapter
   private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
+  private lateinit var tvCoffeeRecommendation: TextView
 
   fun renderNav(user: User) {
     Log.d("HomeFragment", "Rendering BottomNavFragment for user: ${user.firstname} ${user.lastname}")
@@ -48,7 +54,6 @@ class HomeFragment : Fragment() {
       .replace(R.id.navbar_container, childFragment)
       .commit()
   }
-
 
   private fun fetchPosts() {
     swipeRefreshLayout.isRefreshing = true
@@ -70,7 +75,6 @@ class HomeFragment : Fragment() {
         swipeRefreshLayout.isRefreshing = false
       }
   }
-
 
   private fun fetchCurrentUserAndRenderNav() {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
@@ -96,7 +100,6 @@ class HomeFragment : Fragment() {
             profileImageUrl = profileImageUrl,
             imageBlob = null
           )
-
           renderNav(user)
         } else {
           Toast.makeText(requireContext(), "User data not found", Toast.LENGTH_SHORT).show()
@@ -106,6 +109,40 @@ class HomeFragment : Fragment() {
         Log.e("HomeFragment", "Error fetching user data", e)
         Toast.makeText(requireContext(), "Failed to fetch user data", Toast.LENGTH_SHORT).show()
       }
+  }
+
+  private fun updateCoffeeRecommendation() {
+    viewLifecycleOwner.lifecycleScope.launch {
+      try {
+        val jsonData = withContext(Dispatchers.IO) {
+          val client = OkHttpClient()
+          val apiKey = "200b857da17d668dbf479de6ff89c982"
+          val url = "https://api.openweathermap.org/data/2.5/weather?q=Tel%20Aviv,IL&units=metric&appid=$apiKey"
+          val request = Request.Builder().url(url).build()
+          val response = client.newCall(request).execute()
+          response.body?.string()
+        }
+
+        if (jsonData != null) {
+          val jsonObject = JSONObject(jsonData)
+          val main = jsonObject.getJSONObject("main")
+          val temp = main.getDouble("temp")
+          val recommendation = when {
+            temp < 10 -> "It's chilly! How about a hot cappuccino?"
+            temp in 10.0..20.0 -> "Perfect weather for a classic latte."
+            else -> "Warm outside? Try an iced coffee for a refreshing twist!"
+          }
+
+          // Now update the UI on the main thread
+          tvCoffeeRecommendation.text = recommendation
+        } else {
+          tvCoffeeRecommendation.text = "Weather data not available"
+        }
+      } catch (e: Exception) {
+        e.printStackTrace()
+        tvCoffeeRecommendation.text = "Weather data not available"
+      }
+    }
   }
 
   override fun onCreateView(
@@ -121,6 +158,8 @@ class HomeFragment : Fragment() {
     recyclerView.layoutManager = LinearLayoutManager(requireContext())
     postAdapter = PostAdapter(postList, requireContext())
     recyclerView.adapter = postAdapter
+
+    tvCoffeeRecommendation = view.findViewById(R.id.tvCoffeeRecommendation)
 
     val userDao = AppDatabase.getDatabase(requireContext()).userDao()
     val repository = UserRepository(userDao)
@@ -143,6 +182,7 @@ class HomeFragment : Fragment() {
 
     fetchPosts()
     fetchCurrentUserAndRenderNav()
+    updateCoffeeRecommendation()
 
     return view
   }
@@ -151,5 +191,6 @@ class HomeFragment : Fragment() {
     super.onResume()
     Log.d("HomeFragment", "onResume")
     fetchPosts()
+    updateCoffeeRecommendation()
   }
 }
