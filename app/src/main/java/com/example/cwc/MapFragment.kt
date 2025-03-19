@@ -1,5 +1,7 @@
 package com.example.cwc
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,7 +10,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -17,11 +23,24 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 
+// 1) Add this import for the FloatingActionButton:
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+
 class MapFragment : Fragment(), OnMapReadyCallback {
 
     private var mMap: GoogleMap? = null
     private lateinit var etSearch: EditText
     private lateinit var btnSearch: Button
+
+    // 2) Change Button to FloatingActionButton:
+    private lateinit var btnMyLocation: FloatingActionButton
+
+    // FusedLocationProviderClient to get the user's location
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,6 +51,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         etSearch = view.findViewById(R.id.et_search)
         btnSearch = view.findViewById(R.id.btn_search)
 
+        // 3) Make sure to findViewById using the FloatingActionButton’s ID:
+        btnMyLocation = view.findViewById(R.id.btn_my_location)
+
         btnSearch.setOnClickListener {
             val query = etSearch.text.toString().trim()
             if (query.isNotEmpty()) {
@@ -40,6 +62,12 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 Toast.makeText(requireContext(), "Enter a search term", Toast.LENGTH_SHORT).show()
             }
         }
+
+        btnMyLocation.setOnClickListener {
+            showMyLocation()
+        }
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -58,6 +86,52 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMap?.setOnMarkerClickListener { marker ->
             openCoffeeShopDetails(marker)
             true  // Indicates we have consumed the event.
+        }
+    }
+
+    // Function to show user's current location
+    private fun showMyLocation() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Request permission if not already granted
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            // Get the last known location
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    val myLatLng = LatLng(location.latitude, location.longitude)
+                    mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 15f))
+                    // Optionally, add a marker
+                    mMap?.addMarker(
+                        MarkerOptions().position(myLatLng).title("You are here")
+                    )
+                } else {
+                    Toast.makeText(requireContext(), "Unable to retrieve current location", Toast.LENGTH_SHORT).show()
+                }
+            }.addOnFailureListener {
+                Toast.makeText(requireContext(), "Error retrieving location", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // Handle the result of the permission request
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                showMyLocation()
+            } else {
+                Toast.makeText(requireContext(), "Location permission is required to show your current location", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

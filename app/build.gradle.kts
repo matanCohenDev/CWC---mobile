@@ -44,6 +44,8 @@ android {
 dependencies {
   implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
   implementation("com.google.android.gms:play-services-maps:18.1.0")
+  implementation ("com.google.android.material:material:<latest-version>")
+
 
   implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
   implementation("com.google.firebase:firebase-auth-ktx")
@@ -61,7 +63,8 @@ dependencies {
   implementation(libs.room.runtime)
   implementation(libs.firebase.common.ktx)
   implementation(libs.androidx.swiperefreshlayout)
-  kapt(libs.androidx.room.compiler)
+    implementation(libs.play.services.location)
+    kapt(libs.androidx.room.compiler)
   implementation(libs.androidx.room.ktx)
 
   implementation(libs.androidx.navigation.fragment.ktx)
