@@ -62,7 +62,6 @@ class CommentAdapter(
             holder.commentAvatar.setImageResource(R.drawable.profile_foreground)
           }
 
-          // Set click listener on the username
           holder.commentUserName.setOnClickListener {
             onUsernameClick(comment.userId)
           }

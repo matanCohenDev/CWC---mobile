@@ -5,7 +5,7 @@ import java.io.Serializable
 
 data class Post(
   @DocumentId val id: String = "",
-  val image_path: String = "", // שדה מעודכן
+  val image_path: String = "",
   val description: String = "",
   val user_id: String = "",
   val timestamp: Long = 0,

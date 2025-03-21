@@ -7,7 +7,6 @@ import retrofit2.http.*
 
 interface CloudinaryApi {
 
-    // Endpoint for image uploads.
     @Multipart
     @POST("v1_1/{cloudName}/image/upload")
     fun uploadImage(
@@ -16,7 +15,6 @@ interface CloudinaryApi {
         @Part("upload_preset") uploadPreset: RequestBody
     ): Call<CloudinaryUploadResponse>
 
-    // Endpoint for deleting an image.
     @FormUrlEncoded
     @POST("v1_1/{cloudName}/image/destroy")
     fun deleteImage(
