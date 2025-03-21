@@ -54,24 +54,19 @@ class UpdateImageActivity : AppCompatActivity() {
     btnSave = findViewById(R.id.btnSave)
     btnCancel = findViewById(R.id.btnCancel)
 
-    // Get post data from the Intent
     post = intent.getSerializableExtra("post") as? Post ?: run {
       Toast.makeText(this, "No post data found", Toast.LENGTH_SHORT).show()
       finish()
       return
     }
 
-    // Load the current post image.
-    // If post.image_path is already a URL from Cloudinary, Glide will load it correctly.
     Glide.with(this)
       .load(post.image_path)
       .into(ivPostImage)
 
-    // Display the current description
     etDescription.setText(post.description)
 
     btnChooseImage.setOnClickListener {
-      // Open gallery to choose a new image
       pickImageLauncher.launch("image/*")
     }
 
@@ -82,14 +77,12 @@ class UpdateImageActivity : AppCompatActivity() {
         return@setOnClickListener
       }
       if (selectedImageUri != null) {
-        // If a new image is selected, upload it to Cloudinary.
         uploadImageToCloudinary(selectedImageUri!!, onSuccess = { secureUrl ->
           updatePost(post.id, updatedDescription, secureUrl)
         }, onFailure = { errorMsg ->
           Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
         })
       } else {
-        // Update only the description
         updatePost(post.id, updatedDescription, null)
       }
     }
@@ -99,7 +92,6 @@ class UpdateImageActivity : AppCompatActivity() {
     }
   }
 
-  // Saves the selected image locally (temporary) to get a File reference.
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = contentResolver.openInputStream(uri)
@@ -122,7 +114,6 @@ class UpdateImageActivity : AppCompatActivity() {
     }
   }
 
-  // Updates the post in Firestore with the new description and (optionally) new image URL.
   private fun updatePost(postId: String, newDescription: String, newImagePath: String?) {
     val updates = mutableMapOf<String, Any>(
       "description" to newDescription
@@ -143,7 +134,6 @@ class UpdateImageActivity : AppCompatActivity() {
       }
   }
 
-  // Uploads the selected image to Cloudinary using Retrofit.
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -158,8 +148,6 @@ class UpdateImageActivity : AppCompatActivity() {
     val requestFile = RequestBody.create("image/*".toMediaTypeOrNull(), file)
     val filePart = MultipartBody.Part.createFormData("file", file.name, requestFile)
 
-    // Use your Cloudinary preset and cloud name.
-    // Replace "CWC - Content With Coffee" and "dtdw1bmq4" with your actual preset and cloud name.
     val preset = "CWC - Content With Coffee"
     val presetRequestBody = RequestBody.create("text/plain".toMediaTypeOrNull(), preset)
     val call = CloudinaryService.api.uploadImage("dtdw1bmq4", filePart, presetRequestBody)

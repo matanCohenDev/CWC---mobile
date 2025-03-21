@@ -42,7 +42,6 @@ class ProfilePostAdapter(private val postList: MutableList<Post>, private val co
     val post = postList[position]
     val currentUser = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    // לחיצה על כפתור העריכה – מעבר למסך עדכון תמונה (UpdateImageActivity)
     holder.editButton.setOnClickListener {
       val intent = Intent(context, UpdateImageActivity::class.java)
       intent.putExtra("post", post)
@@ -50,24 +49,19 @@ class ProfilePostAdapter(private val postList: MutableList<Post>, private val co
       Log.d("ProfilePostAdapter", "Edit button clicked - launching UpdateImageActivity")
     }
 
-    // טעינת תמונת הפוסט מהנתיב המקומי (הנתיב נשמר בשדה image_path)
     Glide.with(holder.itemView.context)
       .load(post.image_path)
       .into(holder.postImage)
 
-    // הצגת תיאור הפוסט
     holder.postDescription.text = post.description
 
-    // הצגת מספר הלייקים ושינוי UI בהתאם
     holder.likeCount.text = post.likes.toString()
     updateLikeUI(holder, post, currentUser)
 
-    // לחיצה על כפתור לייק
     holder.likeButton.setOnClickListener {
       toggleLike(holder, post, currentUser)
     }
 
-    // מחיקת פוסט – רק אם המשתמש הנוכחי הוא הבעלים
     holder.deletePost.setOnClickListener {
       FirebaseFirestore.getInstance().collection("posts").document(post.id).delete()
         .addOnSuccessListener {

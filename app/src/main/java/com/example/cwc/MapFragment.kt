@@ -32,10 +32,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var etSearch: EditText
     private lateinit var btnSearch: Button
 
-    // 2) Change Button to FloatingActionButton:
     private lateinit var btnMyLocation: FloatingActionButton
 
-    // FusedLocationProviderClient to get the user's location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     companion object {
@@ -51,7 +49,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         etSearch = view.findViewById(R.id.et_search)
         btnSearch = view.findViewById(R.id.btn_search)
 
-        // 3) Make sure to findViewById using the FloatingActionButton’s ID:
         btnMyLocation = view.findViewById(R.id.btn_my_location)
 
         btnSearch.setOnClickListener {
@@ -78,35 +75,29 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
-        // Center the map on Israel
         val israelCenter = LatLng(31.0461, 34.8516)
         mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(israelCenter, 7f))
 
-        // Set a marker click listener to open more details
         mMap?.setOnMarkerClickListener { marker ->
             openCoffeeShopDetails(marker)
-            true  // Indicates we have consumed the event.
+            true
         }
     }
 
-    // Function to show user's current location
     private fun showMyLocation() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            // Request permission if not already granted
             ActivityCompat.requestPermissions(
                 requireActivity(),
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         } else {
-            // Get the last known location
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
                     val myLatLng = LatLng(location.latitude, location.longitude)
                     mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 15f))
-                    // Optionally, add a marker
                     mMap?.addMarker(
                         MarkerOptions().position(myLatLng).title("You are here")
                     )
@@ -119,7 +110,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    // Handle the result of the permission request
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -135,7 +125,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    // Helper function to add a marker with a description
     private fun addCoffeeMarker(location: LatLng, title: String, description: String) {
         val marker = mMap?.addMarker(
             MarkerOptions().position(location).title(title)
@@ -225,7 +214,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    // Opens a dialog displaying more information about the selected coffee shop.
     private fun openCoffeeShopDetails(marker: Marker) {
         val title = marker.title ?: "Coffee Shop"
         val description = marker.tag as? String ?: "No additional info available."

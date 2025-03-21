@@ -1,6 +1,5 @@
 package com.example.cwc.cloudinary
 
-// This data class matches the JSON response from Cloudinary.
 data class CloudinaryUploadResponse(
     val public_id: String?,
     val version: Long?,

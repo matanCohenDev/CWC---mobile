@@ -49,7 +49,6 @@ class UserProfileActivity : AppCompatActivity() {
       return
     }
 
-    // Load posts once (real-time updates for posts aren’t implemented here)
     loadUserPosts(currentUserId)
   }
 
@@ -63,7 +62,6 @@ class UserProfileActivity : AppCompatActivity() {
     detachUserDocumentListener()
   }
 
-  // Attach a real-time listener to the user document.
   private fun attachUserDocumentListener() {
     userDocListener = FirebaseFirestore.getInstance()
       .collection("users")
@@ -74,7 +72,6 @@ class UserProfileActivity : AppCompatActivity() {
           return@addSnapshotListener
         }
         if (snapshot != null && snapshot.exists()) {
-          // Extract user fields from the snapshot.
           val firstName = snapshot.getString("firstname") ?: ""
           val lastName = snapshot.getString("lastname") ?: ""
           val email = snapshot.getString("email") ?: "No email"
@@ -86,13 +83,11 @@ class UserProfileActivity : AppCompatActivity() {
       }
   }
 
-  // Detach the listener when the activity is no longer visible.
   private fun detachUserDocumentListener() {
     userDocListener?.remove()
     userDocListener = null
   }
 
-  // Update the UI components with the user’s data.
   private fun updateProfileUI(
     firstName: String,
     lastName: String,
@@ -112,7 +107,6 @@ class UserProfileActivity : AppCompatActivity() {
     }
   }
 
-  // Force Glide to load a fresh image (bypassing cache) using a timestamp and signature.
   private fun updateProfileImage(imageUrl: String) {
     val separator = if (imageUrl.contains("?")) "&" else "?"
     Glide.with(this)
@@ -125,21 +119,18 @@ class UserProfileActivity : AppCompatActivity() {
       .into(ivProfile)
   }
 
-  // Handle the result from EditProfileActivity.
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
     super.onActivityResult(requestCode, resultCode, data)
     if (requestCode == EDIT_PROFILE_REQUEST && resultCode == RESULT_OK) {
       val newImageUrl = data?.getStringExtra("profileImageUrl")
       Log.d("UserProfileActivity", "Received image URL from edit: $newImageUrl")
       if (!newImageUrl.isNullOrEmpty()) {
-        // Clear Glide's cache for the image view and force an update.
         Glide.with(this).clear(ivProfile)
         updateProfileImage(newImageUrl)
       }
     }
   }
 
-  // Load posts (one-off fetch).
   private fun loadUserPosts(userId: String) {
     FirebaseFirestore.getInstance().collection("posts")
       .whereEqualTo("user_id", userId)

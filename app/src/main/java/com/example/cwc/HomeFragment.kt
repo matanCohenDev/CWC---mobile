@@ -133,7 +133,6 @@ class HomeFragment : Fragment() {
             else -> "It's ${temp}°C outside! Try an iced coffee for a refreshing twist!"
           }
 
-          // Now update the UI on the main thread
           tvCoffeeRecommendation.text = recommendation
         } else {
           tvCoffeeRecommendation.text = "Weather data not available"

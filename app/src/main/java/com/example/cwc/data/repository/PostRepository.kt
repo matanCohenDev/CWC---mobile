@@ -10,7 +10,6 @@ class PostRepository {
 
   private val db = FirebaseFirestore.getInstance()
 
-  // עדכון הלייק על פוסט
   fun updatePostLike(context: Context, postId: String, userId: String) {
     val postRef = db.collection("posts").document(postId)
 
@@ -20,7 +19,6 @@ class PostRepository {
         post?.let {
           val likedUsers = it.likedUsers.toMutableList()
 
-          // אם המשתמש כבר אהב את הפוסט, הסר את הלייק
           if (likedUsers.contains(userId)) {
             likedUsers.remove(userId)
             postRef.update("likes", FieldValue.increment(-1), "likedUsers", likedUsers)
@@ -31,7 +29,6 @@ class PostRepository {
                 Toast.makeText(context, "Failed to remove like", Toast.LENGTH_SHORT).show()
               }
           } else {
-            // אם המשתמש לא אהב את הפוסט, הוסף את הלייק
             likedUsers.add(userId)
             postRef.update("likes", FieldValue.increment(1), "likedUsers", likedUsers)
               .addOnSuccessListener {

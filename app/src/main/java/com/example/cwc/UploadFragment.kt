@@ -31,7 +31,6 @@ class UploadFragment : Fragment() {
   private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
   private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-  // Launcher for picking an image
   private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
     uri?.let {
       selectedImageUri = it
@@ -39,12 +38,10 @@ class UploadFragment : Fragment() {
     }
   }
 
-  // Opens the gallery to pick an image
   private fun openGallery() {
     pickImageLauncher.launch("image/*")
   }
 
-  // Saves the picked image locally before uploading to Cloudinary
   private fun saveImageLocally(uri: Uri): String? {
     return try {
       val inputStream = requireContext().contentResolver.openInputStream(uri)
@@ -67,7 +64,6 @@ class UploadFragment : Fragment() {
     }
   }
 
-  // Uploads the local file to Cloudinary
   private fun uploadImageToCloudinary(
     imageUri: Uri,
     onSuccess: (String) -> Unit,
@@ -106,11 +102,9 @@ class UploadFragment : Fragment() {
     })
   }
 
-  // Uploads the post data (image URL + description) to Firestore
   private fun uploadPost(imageUri: Uri, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
-    // First upload the selected image to Cloudinary
     uploadImageToCloudinary(
       imageUri,
       onSuccess = { secureUrl ->
@@ -122,7 +116,6 @@ class UploadFragment : Fragment() {
     )
   }
 
-  // Saves the post to Firestore
   private fun savePostToFirestore(imageUrl: String, description: String) {
     val userId = auth.currentUser?.uid ?: return
 
@@ -160,8 +153,6 @@ class UploadFragment : Fragment() {
       title = "Upload Post"
     }
 
-    // Bottom Nav Integration:
-    // Make sure you have a container (FrameLayout) in fragment_upload.xml with id = navbar_container
     val childFragment = BottomNavFragment()
     val bundle = Bundle()
     bundle.putString("current_page", "upload")
@@ -170,7 +161,6 @@ class UploadFragment : Fragment() {
       .replace(R.id.navbar_container, childFragment)
       .commit()
 
-    // Buttons
     view.findViewById<Button>(R.id.upload_button).setOnClickListener {
       openGallery()
     }
@@ -187,7 +177,6 @@ class UploadFragment : Fragment() {
     return view
   }
 
-  // Handle the back arrow in the action bar
   override fun onOptionsItemSelected(item: MenuItem): Boolean {
     return when (item.itemId) {
       android.R.id.home -> {
