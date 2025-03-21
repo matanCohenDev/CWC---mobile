@@ -19,7 +19,6 @@
     <action
         android:id="@+id/action_homeFragment_to_logoutFragment"
         app:destination="@id/logoutFragment" />
-    <!-- Action to navigate from Home to CafeMapFragment -->
     <action
         android:id="@+id/action_homeFragment_to_cafeMapFragment"
         app:destination="@id/mapFragment" />
@@ -39,7 +38,6 @@
     <action
         android:id="@+id/action_profileFragment_to_logoutFragment"
         app:destination="@id/logoutFragment" />
-    <!-- Action to navigate from Profile to CafeMapFragment -->
     <action
         android:id="@+id/action_profileFragment_to_cafeMapFragment"
         app:destination="@id/mapFragment" />
@@ -59,7 +57,6 @@
     <action
         android:id="@+id/action_uploadFragment_to_logoutFragment"
         app:destination="@id/logoutFragment" />
-    <!-- Action to navigate from Upload to CafeMapFragment -->
     <action
         android:id="@+id/action_uploadFragment_to_cafeMapFragment"
         app:destination="@id/mapFragment" />
@@ -103,7 +100,6 @@
       android:id="@+id/action_global_cafeMapFragment"
       app:destination="@id/mapFragment" />
 
-  <!-- Destination for the Cafe Map screen -->
   <fragment
       android:id="@+id/mapFragment"
       android:name="com.example.cwc.MapFragment"

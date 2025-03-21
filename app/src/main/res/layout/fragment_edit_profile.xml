@@ -11,7 +11,6 @@
       android:layout_height="wrap_content"
       android:orientation="vertical">
 
-    <!-- Profile Image -->
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/edit_profile_image"
         android:layout_width="120dp"
@@ -20,7 +19,6 @@
         android:src="@drawable/profile_foreground"
         android:elevation="4dp"/>
 
-    <!-- Text indicating change image -->
     <TextView
         android:id="@+id/edit_change_image_text"
         android:layout_width="wrap_content"
@@ -30,7 +28,6 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"/>
 
-    <!-- First Name -->
     <EditText
         android:id="@+id/edit_et_firstname"
         android:layout_width="match_parent"
@@ -39,7 +36,6 @@
         android:inputType="textPersonName"
         android:layout_marginTop="16dp"/>
 
-    <!-- Last Name -->
     <EditText
         android:id="@+id/edit_et_lastname"
         android:layout_width="match_parent"
@@ -48,7 +44,6 @@
         android:inputType="textPersonName"
         android:layout_marginTop="8dp"/>
 
-    <!-- Email -->
     <EditText
         android:id="@+id/edit_et_email"
         android:layout_width="match_parent"
@@ -57,7 +52,6 @@
         android:inputType="textEmailAddress"
         android:layout_marginTop="8dp"/>
 
-    <!-- Location -->
     <EditText
         android:id="@+id/edit_et_location"
         android:layout_width="match_parent"
@@ -66,7 +60,6 @@
         android:inputType="text"
         android:layout_marginTop="8dp"/>
 
-    <!-- Save Button -->
     <Button
         android:id="@+id/edit_btn_save"
         android:layout_width="match_parent"
@@ -74,7 +67,6 @@
         android:text="Save Changes"
         android:layout_marginTop="16dp"/>
 
-    <!-- Cancel Button (New) -->
     <Button
         android:id="@+id/edit_btn_cancel"
         android:layout_width="match_parent"

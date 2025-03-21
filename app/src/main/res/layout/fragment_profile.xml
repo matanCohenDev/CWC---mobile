@@ -9,7 +9,6 @@
   tools:context=".ProfileFragment"
   android:background="@color/background_color">
 
-  <!-- Profile Card -->
   <androidx.cardview.widget.CardView
     android:id="@+id/profile_card"
     android:layout_width="match_parent"
@@ -29,7 +28,6 @@
       android:gravity="center"
       android:padding="16dp">
 
-      <!-- Profile Image -->
       <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/profile_picture"
         android:layout_width="120dp"
@@ -38,7 +36,6 @@
         android:layout_gravity="center"
         android:elevation="4dp"/>
 
-      <!-- Full Name -->
       <TextView
         android:id="@+id/fullname_text"
         android:layout_width="wrap_content"
@@ -50,7 +47,6 @@
         android:layout_marginTop="10dp"
         android:gravity="center"/>
 
-      <!-- Location -->
       <TextView
         android:id="@+id/location_text"
         android:layout_width="wrap_content"
@@ -60,7 +56,6 @@
         android:textColor="@color/gray"
         android:gravity="center"/>
 
-      <!-- Email -->
       <TextView
         android:id="@+id/email_text"
         android:layout_width="wrap_content"
@@ -70,8 +65,6 @@
         android:textColor="@color/gray"
         android:gravity="center"/>
 
-      <!-- Edit Profile Button -->
-      <!-- בלחיצה על כפתור זה נעבור למסך עריכת פרופיל -->
       <Button
         android:id="@+id/edit_profile_picture_text"
         android:layout_width="wrap_content"
@@ -82,7 +75,6 @@
     </LinearLayout>
   </androidx.cardview.widget.CardView>
 
-  <!-- Posts Section -->
   <androidx.cardview.widget.CardView
     android:id="@+id/posts_container"
     android:layout_width="match_parent"
@@ -110,7 +102,6 @@
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
   </androidx.cardview.widget.CardView>
 
-  <!-- Navigation Bar -->
   <FrameLayout
     android:id="@+id/navbar_container"
     android:layout_width="match_parent"
