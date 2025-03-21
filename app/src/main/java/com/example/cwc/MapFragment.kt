@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
@@ -22,206 +22,158 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-
-// 1) Add this import for the FloatingActionButton:
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.util.*
 
 class MapFragment : Fragment(), OnMapReadyCallback {
 
-    private var mMap: GoogleMap? = null
-    private lateinit var etSearch: EditText
-    private lateinit var btnSearch: Button
+  private var mMap: GoogleMap? = null
+  private lateinit var etSearch: AutoCompleteTextView
+  private lateinit var btnMyLocation: FloatingActionButton
+  private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    private lateinit var btnMyLocation: FloatingActionButton
+  companion object {
+    private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+  }
 
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+  override fun onCreateView(
+    inflater: LayoutInflater, container: ViewGroup?,
+    savedInstanceState: Bundle?
+  ): View? {
+    val view = inflater.inflate(R.layout.fragment_map, container, false)
 
-    companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+    etSearch = view.findViewById(R.id.et_search)
+    btnMyLocation = view.findViewById(R.id.btn_my_location)
+
+    btnMyLocation.setOnClickListener {
+      showMyLocation()
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_map, container, false)
+    fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
 
-        etSearch = view.findViewById(R.id.et_search)
-        btnSearch = view.findViewById(R.id.btn_search)
+    val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+    mapFragment.getMapAsync(this)
 
-        btnMyLocation = view.findViewById(R.id.btn_my_location)
+    val coffeeChains = listOf("Aroma", "Cofix", "Cafe Cafe", "Greg", "Landwer")
+    val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, coffeeChains)
+    etSearch.setAdapter(adapter)
 
-        btnSearch.setOnClickListener {
-            val query = etSearch.text.toString().trim()
-            if (query.isNotEmpty()) {
-                searchCoffeeShops(query)
-            } else {
-                Toast.makeText(requireContext(), "Enter a search term", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        btnMyLocation.setOnClickListener {
-            showMyLocation()
-        }
-
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-
-        val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
-        mapFragment.getMapAsync(this)
-
-        return view
+    etSearch.setOnItemClickListener { _, _, position, _ ->
+      val selected = adapter.getItem(position) ?: return@setOnItemClickListener
+      searchCoffeeShops(selected)
     }
 
-    override fun onMapReady(googleMap: GoogleMap) {
-        mMap = googleMap
+    return view
+  }
 
-        val israelCenter = LatLng(31.0461, 34.8516)
-        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(israelCenter, 7f))
-
-        mMap?.setOnMarkerClickListener { marker ->
-            openCoffeeShopDetails(marker)
-            true
-        }
+  override fun onMapReady(googleMap: GoogleMap) {
+    mMap = googleMap
+    val rishonLezion = LatLng(31.9714, 34.7722)
+    mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(rishonLezion, 12f))
+    mMap?.setOnMarkerClickListener { marker ->
+      openCoffeeShopDetails(marker)
+      true
     }
+  }
 
-    private fun showMyLocation() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
-        } else {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    val myLatLng = LatLng(location.latitude, location.longitude)
-                    mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 15f))
-                    mMap?.addMarker(
-                        MarkerOptions().position(myLatLng).title("You are here")
-                    )
-                } else {
-                    Toast.makeText(requireContext(), "Unable to retrieve current location", Toast.LENGTH_SHORT).show()
-                }
-            }.addOnFailureListener {
-                Toast.makeText(requireContext(), "Error retrieving location", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
+  private fun showMyLocation() {
+    if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+      != PackageManager.PERMISSION_GRANTED
     ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showMyLocation()
-            } else {
-                Toast.makeText(requireContext(), "Location permission is required to show your current location", Toast.LENGTH_SHORT).show()
-            }
+      ActivityCompat.requestPermissions(
+        requireActivity(),
+        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+        LOCATION_PERMISSION_REQUEST_CODE
+      )
+    } else {
+      fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+        if (location != null) {
+          val myLatLng = LatLng(location.latitude, location.longitude)
+          mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 15f))
+          mMap?.addMarker(MarkerOptions().position(myLatLng).title("You are here"))
+        } else {
+          Toast.makeText(requireContext(), "Unable to retrieve current location", Toast.LENGTH_SHORT).show()
         }
+      }.addOnFailureListener {
+        Toast.makeText(requireContext(), "Error retrieving location", Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+      if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        showMyLocation()
+      } else {
+        Toast.makeText(requireContext(), "Location permission is required to show your current location", Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
+  private fun addCoffeeMarker(location: LatLng, title: String, description: String) {
+    val marker = mMap?.addMarker(MarkerOptions().position(location).title(title))
+    marker?.tag = description
+  }
+
+  private fun searchCoffeeShops(query: String) {
+    mMap?.clear()
+
+    val results = when (query.lowercase(Locale.ROOT)) {
+      "aroma" -> listOf(
+        Triple(LatLng(32.0708, 34.7941), "Aroma Tel Aviv", "קפה איכותי ואווירה נעימה."),
+        Triple(LatLng(31.7685, 35.2137), "Aroma Jerusalem", "מקום מפגש פופולרי."),
+        Triple(LatLng(32.7940, 34.9896), "Aroma Haifa", "נוף לים וקפה משובח."),
+        Triple(LatLng(31.9714, 34.7722), "Aroma Rishon LeZion", "שירות מצוין ומיקום מרכזי.")
+      )
+      "cofix" -> listOf(
+        Triple(LatLng(32.0633, 34.7725), "Cofix Tel Aviv", "קפה זול ואיכותי."),
+        Triple(LatLng(31.7945, 35.2172), "Cofix Jerusalem", "חוויה עירונית."),
+        Triple(LatLng(32.3334, 34.8575), "Cofix Netanya", "מקום קבוע לחובבי הקפה."),
+        Triple(LatLng(31.2520, 34.7915), "Cofix Beer Sheva", "קפה במחיר משתלם.")
+      )
+      "cafe cafe" -> listOf(
+        Triple(LatLng(32.0764, 34.7805), "Cafe Cafe Tel Aviv", "מרפסת רחוב תוססת."),
+        Triple(LatLng(31.9635, 34.7896), "Cafe Cafe Rishon LeZion", "מרכז עזריאלי."),
+        Triple(LatLng(32.0853, 34.7818), "Cafe Cafe Dizengoff", "לב העיר.")
+      )
+      "greg" -> listOf(
+        Triple(LatLng(32.7940, 34.9896), "Greg Haifa", "קפה עם נוף לים."),
+        Triple(LatLng(31.9635, 34.7896), "Greg Rishon LeZion", "קניון הזהב."),
+        Triple(LatLng(31.8980, 34.8106), "Greg Rehovot", "רחוב הרצל.")
+      )
+      "landwer" -> listOf(
+        Triple(LatLng(32.0684, 34.8248), "Landwer Ramat Gan", "רמת גן - פארק הירקון."),
+        Triple(LatLng(32.1093, 34.8372), "Landwer Ramat Aviv", "מרכז שוסטר."),
+        Triple(LatLng(31.9730, 34.7730), "Landwer Rishon LeZion", "סינמה סיטי.")
+      )
+      else -> emptyList()
     }
 
-    private fun addCoffeeMarker(location: LatLng, title: String, description: String) {
-        val marker = mMap?.addMarker(
-            MarkerOptions().position(location).title(title)
-        )
-        marker?.tag = description
+    if (results.isEmpty()) {
+      Toast.makeText(requireContext(), "No data available for \"$query\"", Toast.LENGTH_SHORT).show()
+      return
     }
 
-    private fun searchCoffeeShops(query: String) {
-        mMap?.clear()
-
-        when {
-            query.equals("aroma", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val jerusalem = LatLng(31.7683, 35.2137)
-                val haifa = LatLng(32.7940, 34.9896)
-                val rishonLezion = LatLng(31.9714, 34.7925)
-
-                addCoffeeMarker(telAviv, "Aroma Tel Aviv", "A cozy café with a vibrant atmosphere in Tel Aviv.")
-                addCoffeeMarker(jerusalem, "Aroma Jerusalem", "Known for its artisan brews in the heart of Jerusalem.")
-                addCoffeeMarker(haifa, "Aroma Haifa", "Enjoy sea views with your coffee in Haifa.")
-                addCoffeeMarker(rishonLezion, "Aroma Rishon LeZion", "A popular spot for both locals and visitors.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            query.equals("cafe nero", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val netanya = LatLng(32.3214, 34.8535)
-                val beerSheva = LatLng(31.2518, 34.7913)
-                val haifa = LatLng(32.7940, 34.9896)
-
-                addCoffeeMarker(telAviv, "Cafe Nero Tel Aviv", "Stylish ambiance with modern decor in Tel Aviv.")
-                addCoffeeMarker(netanya, "Cafe Nero Netanya", "A favorite meeting spot in Netanya.")
-                addCoffeeMarker(beerSheva, "Cafe Nero Beer Sheva", "Comfortable seating and quality brews in Beer Sheva.")
-                addCoffeeMarker(haifa, "Cafe Nero Haifa", "Relax and enjoy your coffee with a view in Haifa.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            query.equals("coffee bean", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val jerusalem = LatLng(31.7683, 35.2137)
-                val ramatGan = LatLng(32.0684, 34.8245)
-                val haifa = LatLng(32.7940, 34.9896)
-
-                addCoffeeMarker(telAviv, "Coffee Bean Tel Aviv", "A trendy café known for its unique blends in Tel Aviv.")
-                addCoffeeMarker(jerusalem, "Coffee Bean Jerusalem", "Experience a blend of tradition and innovation.")
-                addCoffeeMarker(ramatGan, "Coffee Bean Ramat Gan", "Popular for its lively vibe and specialty coffees.")
-                addCoffeeMarker(haifa, "Coffee Bean Haifa", "Offers a scenic view along with excellent coffee.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            query.equals("cafe cafe", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val rishonLezion = LatLng(31.9714, 34.7925)
-                val netanya = LatLng(32.3214, 34.8535)
-                val jerusalem = LatLng(31.7683, 35.2137)
-
-                addCoffeeMarker(telAviv, "Cafe Cafe Tel Aviv", "Bright and modern space in Tel Aviv.")
-                addCoffeeMarker(rishonLezion, "Cafe Cafe Rishon LeZion", "A casual spot for great coffee in Rishon LeZion.")
-                addCoffeeMarker(netanya, "Cafe Cafe Netanya", "Relax in a friendly atmosphere in Netanya.")
-                addCoffeeMarker(jerusalem, "Cafe Cafe Jerusalem", "A must-visit spot in Jerusalem for coffee lovers.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            query.equals("cofix", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val jerusalem = LatLng(31.7683, 35.2137)
-                val netanya = LatLng(32.3214, 34.8535)
-                val beerSheva = LatLng(31.2518, 34.7913)
-
-                addCoffeeMarker(telAviv, "Cofix Tel Aviv", "Enjoy a modern twist on classic coffee drinks in Tel Aviv.")
-                addCoffeeMarker(jerusalem, "Cofix Jerusalem", "A trendy café with a comfortable setting in Jerusalem.")
-                addCoffeeMarker(netanya, "Cofix Netanya", "A hotspot in Netanya for coffee enthusiasts.")
-                addCoffeeMarker(beerSheva, "Cofix Beer Sheva", "Known for its quick service and quality coffee in Beer Sheva.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            query.equals("gansipur", ignoreCase = true) -> {
-                val telAviv = LatLng(32.0853, 34.7818)
-                val jerusalem = LatLng(31.7683, 35.2137)
-                val haifa = LatLng(32.7940, 34.9896)
-                val netanya = LatLng(32.3214, 34.8535)
-
-                addCoffeeMarker(telAviv, "Gansipur Tel Aviv", "A vibrant café with a unique menu in Tel Aviv.")
-                addCoffeeMarker(jerusalem, "Gansipur Jerusalem", "Mixing tradition with modern coffee culture in Jerusalem.")
-                addCoffeeMarker(haifa, "Gansipur Haifa", "Offers an extensive coffee selection in Haifa.")
-                addCoffeeMarker(netanya, "Gansipur Netanya", "A friendly spot with cozy seating in Netanya.")
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(telAviv, 10f))
-            }
-            else -> {
-                Toast.makeText(requireContext(), "No data available for \"$query\"", Toast.LENGTH_SHORT).show()
-            }
-        }
+    results.forEach { (location, title, description) ->
+      addCoffeeMarker(location, title, description)
     }
 
-    private fun openCoffeeShopDetails(marker: Marker) {
-        val title = marker.title ?: "Coffee Shop"
-        val description = marker.tag as? String ?: "No additional info available."
+    mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(results[0].first, 12f))
+  }
 
-        AlertDialog.Builder(requireContext())
-            .setTitle(title)
-            .setMessage(description)
-            .setPositiveButton("Close", null)
-            .show()
-    }
+  private fun openCoffeeShopDetails(marker: Marker) {
+    val title = marker.title ?: "Coffee Shop"
+    val description = marker.tag as? String ?: "No additional info available."
+
+    AlertDialog.Builder(requireContext())
+      .setTitle(title)
+      .setMessage(description)
+      .setPositiveButton("Close", null)
+      .show()
+  }
 }

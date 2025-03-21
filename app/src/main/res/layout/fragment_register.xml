@@ -7,7 +7,6 @@
   android:layout_height="match_parent"
   tools:context=".RegisterFragment">
 
-  <!-- Background Image -->
   <ImageView
     android:id="@+id/background_image"
     android:layout_width="match_parent"
@@ -16,7 +15,6 @@
     android:src="@drawable/background"
     android:contentDescription="Background Image"/>
 
-  <!-- Register Title -->
   <TextView
     android:id="@+id/home_fragment"
     android:layout_width="wrap_content"
@@ -33,7 +31,6 @@
     app:layout_constraintTop_toTopOf="parent"
     app:layout_constraintVertical_bias="0.1"/>
 
-  <!-- First Name Field -->
   <EditText
     android:id="@+id/firstname_field"
     android:layout_width="280dp"
@@ -51,7 +48,6 @@
     app:layout_constraintTop_toBottomOf="@+id/home_fragment"
     app:layout_constraintVertical_bias="0.1"/>
 
-  <!-- Last Name Field -->
   <EditText
     android:id="@+id/lastname_field"
     android:layout_width="280dp"
@@ -68,7 +64,6 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toBottomOf="@+id/firstname_field"/>
 
-  <!-- Email Field -->
   <EditText
     android:id="@+id/email_field"
     android:layout_width="280dp"
@@ -85,7 +80,6 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toBottomOf="@+id/lastname_field"/>
 
-  <!-- Password Field -->
   <EditText
     android:id="@+id/password_field"
     android:layout_width="280dp"
@@ -102,7 +96,6 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toBottomOf="@+id/email_field"/>
 
-  <!-- Country Field -->
   <EditText
     android:id="@+id/country_field"
     android:layout_width="280dp"
@@ -119,7 +112,6 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toBottomOf="@+id/password_field"/>
 
-  <!-- Register Button -->
   <Button
     android:id="@+id/register_submit_button"
     android:layout_width="200dp"
@@ -134,7 +126,6 @@
     app:layout_constraintTop_toBottomOf="@+id/country_field"
     app:layout_constraintVertical_bias="0.2"/>
 
-  <!-- Back to Login Button -->
   <Button
     android:id="@+id/register_login_button"
     android:layout_width="wrap_content"
