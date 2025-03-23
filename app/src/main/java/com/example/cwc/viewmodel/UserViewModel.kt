@@ -55,7 +55,6 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
   }
 
-  // If imageBlob is null, load the image from profileImageUrl via Picasso
   fun loadProfilePicture(userId: String, profileImage: ImageView) {
     user.observeForever { user ->
       user?.let {
