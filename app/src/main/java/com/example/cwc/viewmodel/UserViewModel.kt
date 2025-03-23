@@ -20,7 +20,6 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
   val user: LiveData<User?> get() = _user
 
   private val _logoutStatus = MutableLiveData<Boolean>()
-  val logoutStatus: LiveData<Boolean> get() = _logoutStatus
 
   fun addUser(user: User) {
     viewModelScope.launch {
@@ -35,41 +34,10 @@ class UserViewModel(private val repository: UserRepository) : ViewModel() {
     }
   }
 
-  fun getUser(id: String) {
-    viewModelScope.launch {
-      val retrievedUser = repository.getUser(id)
-      _user.postValue(retrievedUser)
-    }
-  }
-
-  fun deleteUser(user: User) {
-    viewModelScope.launch {
-      repository.deleteUser(user)
-    }
-  }
-
   fun logout() {
     viewModelScope.launch {
       repository.logout()
       _logoutStatus.postValue(true)
-    }
-  }
-
-  // If imageBlob is null, load the image from profileImageUrl via Picasso
-  fun loadProfilePicture(userId: String, profileImage: ImageView) {
-    user.observeForever { user ->
-      user?.let {
-        if (it.imageBlob != null) {
-          val bitmap = BitmapFactory.decodeByteArray(it.imageBlob, 0, it.imageBlob.size)
-          profileImage.setImageBitmap(bitmap)
-        } else if (!it.profileImageUrl.isNullOrEmpty()) {
-          Picasso.get()
-            .load(it.profileImageUrl)
-            .placeholder(com.example.cwc.R.drawable.profile_foreground)
-            .error(com.example.cwc.R.drawable.profile_foreground)
-            .into(profileImage)
-        }
-      }
     }
   }
 }
